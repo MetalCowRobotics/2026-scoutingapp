@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pit Scouting Form</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+    <h2>Feild Scouting</h2>
+
+    <form id="scoutingForm">
+        <div class="question">
+            <label for="teamNumber">Team Number</label>
+            <input type="number" id="teamNumber" name="teamNumber" placeholder="e.g. 254" required>
+        </div>
+
+        <div class="question">
+            <label>Auto Climb:</label>
+            <div class="radio-group">
+                <label><input type="radio" name="Auto_climb" value="Yes" > Yes</label>
+                <label><input type="radio" name="Auto_no_climb" value="no"> No</label>
+            </div>
+        </div>
+
+        <div class="question">
+            <label>Auto Move</label>
+            <div class="radio-group">
+                <label><input type="radio" name="Auto_move" value="Yes" > Yes</label>
+                <label><input type="radio" name="Auto_no_move" value="No"> No</label>
+            </div>
+        </div>
+
+        <div class="question">
+            <label>Auto Score</label>
+            <div class="radio-group">
+                <label><input type="radio" name="Auto_score" value="Yes"> Yes</label>
+                <label><input type="radio" name="Auto_no_score" value="No"> No</label>
+            </div>
+        </div>
+
+        <div class="question">
+            <label>Obstacles</label>
+            <label><input type="checkbox" name="overBump"> Can it go over the <b>Bump</b>?</label>
+            <label><input type="checkbox" name="underTrench"> Can it go under the <b>Trench</b>?</label>
+        </div>
+
+        <div class="question">
+            <label>Can you climb?</label>
+            <div class="radio-group">
+                <label><input type="radio" name="climb" value="Yes"> Yes</label>
+                <label><input type="radio" name="climb" value="No"> No</label>
+            </div>
+        </div>
+
+        <div class="question">
+            <label for="ballCapacity">Max balls scored in one cycle?</label>
+            <input type="number" id="ballCapacity" name="ballCapacity" min="0">
+        </div>
+
+        <div class="question">
+            <label for="autos">Describe Autonomous Routines</label>
+            <textarea id="autos" name="autos" rows="3" placeholder="e.g. 3 ball auto, move off line..."></textarea>
+        </div>
+
+        <button type="submit">Submit Data</button>
+    </form>
+
+</body>
+</html>
