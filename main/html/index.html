@@ -3,16 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pit Scouting Form</title>
+    <title>Metal Cow | Pit Scouting</title>
     <link rel="stylesheet" href="../css/styles.css">
 </head>
 <body>
+    <img src="../img/metalcowlogo.png" class="metalcowlogo" alt="Metal Cow logo">
     <nav>
-  <ul>
-    <li><a href="index.html">Pit Scouting</a></li>
-    <li><a href="field.html">Field Scouting</a></li>
-  </ul> 
-</nav>
+        <ul>
+            <li><a href="index.html">Pit Scouting</a></li>
+            <li><a href="field.html">Field Scouting</a></li>
+        </ul> 
+    </nav>
+    
     <h2>Pit Scouting</h2>
 
     <form id="scoutingForm">
@@ -24,38 +26,72 @@
         <div class="question">
             <label>Drivetrain Type</label>
             <div class="radio-group">
-                <label><input type="radio" name="drivetrain" value="Tank" required> Tank</label>
-                <label><input type="radio" name="drivetrain" value="Swerve"> Swerve</label>
-                <label><input type="radio" name="drivetrain" value="Other"> Other</label>
+                <label class="check-inline"><input type="radio" name="drivetrain" value="Tank" required> Tank</label>
+                <label class="check-inline"><input type="radio" name="drivetrain" value="Swerve"> Swerve</label>
+                <label class="check-inline"><input type="radio" name="drivetrain" value="Other"> Other</label>
             </div>
         </div>
 
-        <div class="question">
-            <label>Obstacles</label>
-            <label><input type="checkbox" name="overBump"> Can it go over the <b>Bump</b>?</label>
-            <label><input type="checkbox" name="underTrench"> Can it go under the <b>Trench</b>?</label>
-        </div>
-
-        <div class="question">
-            <label>Can you climb?</label>
-            <div class="radio-group">
-                <label><input type="radio" name="climb" value="Yes"> Yes</label>
-                <label><input type="radio" name="climb" value="No"> No</label>
+        <fieldset>
+            <legend>Autonomous Period</legend>
+            <div class="question">
+                <label for="fuelPreload">Number of fuel preloaded?</label>
+                <input type="number" id="fuelPreload" name="fuelPreload" min="0">
             </div>
-        </div>
+            
+            <label class="check-inline"><input type="checkbox" name="autoMoved"> Auto Moved?</label>
+            <label class="check-inline"><input type="checkbox" name="autoScored"> Auto Scored?</label>
+            <label class="check-inline"><input type="checkbox" name="autoClimb"> Auto Climb?</label>
+            
+            <div class="question" style="margin-top:10px;">
+                <label for="autos">Describe Autonomous Routines</label>
+                <textarea id="autos" name="autos" rows="2" placeholder="e.g. 3 ball auto, move off line..."></textarea>
+            </div>
+        </fieldset>
 
-        <div class="question">
-            <label for="ballCapacity">Max balls scored in one cycle?</label>
-            <input type="number" id="ballCapacity" name="ballCapacity" min="0">
-        </div>
+        <fieldset>
+            <legend>Teleop Capabilities</legend>
+            <div class="question">
+                <label>Obstacles</label>
+                <label class="check-inline"><input type="checkbox" name="overBump"> Can it go over the Bump?</label>
+                <label class="check-inline"><input type="checkbox" name="underTrench"> Can it go under the Trench?</label>
+            </div>
 
-        <div class="question">
-            <label for="autos">Describe Autonomous Routines</label>
-            <textarea id="autos" name="autos" rows="3" placeholder="e.g. 3 ball auto, move off line..."></textarea>
-        </div>
+            <div class="question">
+                <label for="ballCapacity">Max balls scored in one cycle?</label>
+                <input type="number" id="ballCapacity" name="ballCapacity" min="0">
+            </div>
+            <div class="question">
+                <label for="ballCapacity">Fuel per second?</label>
+                <input type="number" id="fuelpersec" name="fuelpersec" min="0">
+            </div>
+        </fieldset>
 
-        <button type="submit">Submit Data</button>
+        <fieldset>
+            <legend>Endgame & Ranking Points</legend>
+            <div class="question">
+                <label>Can it Climb?</label>
+                <div class="radio-group">
+                    <label class="check-inline"><input type="radio" name="climb" value="Yes"> Yes</label>
+                    <label class="check-inline"><input type="radio" name="climb" value="No"> No</label>
+                </div>
+            </div>
+
+            <div class="question">
+                <label for="climbLevel">What level can they reach?</label>
+                <select id="climbLevel" name="climbLevel">
+                    <option value="None">N/A</option>
+                    <option value="Level 1">Level 1</option>
+                    <option value="Level 2">Level 2</option>
+                    <option value="Level 3">Level 3</option>
+                </select>
+            </div>
+
+            <label class="check-inline"><input type="checkbox" name="energizedRP"> Energized Ranking Point?</label>
+            <label class="check-inline"><input type="checkbox" name="superchargedRP"> Supercharged Ranking Point?</label>
+        </fieldset>
+
+        <button type="submit">Submit Pit Data</button>
     </form>
-
 </body>
 </html>

@@ -3,74 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pit Scouting Form</title>
+    <title>Metal Cow | Field Scouting</title>
     <link rel="stylesheet" href="../css/styles.css">
 </head>
 <body>
+    <img src="../img/metalcowlogo.png" class="metalcowlogo" alt="Metal Cow logo">
     <nav>
-  <ul>
-    <li><a href="index.html">Pit Scouting</a></li>
-    <li><a href="field.html">Field Scouting</a></li>
-  </ul> 
-</nav>
-    <h2>Feild Scouting</h2>
+        <ul>
+            <li><a href="index.html">Pit Scouting</a></li>
+            <li><a href="field.html">Field Scouting</a></li>
+        </ul> 
+    </nav>
+    
+    <h2>Field Scouting</h2>
 
-    <form id="scoutingForm">
+    <form id="fieldForm">
         <div class="question">
-            <label for="teamNumber">Team Number</label>
-            <input type="number" id="teamNumber" name="teamNumber" placeholder="e.g. 4213" required>
+            <label for="matchNumber">Match Number</label>
+            <input type="number" id="matchNumber" name="matchNumber" required>
         </div>
 
         <div class="question">
-            <label>Auto Climb:</label>
-            <div class="radio-group">
-                <label><input type="radio" name="Auto_climb" value="Yes" > Yes</label>
-                <label><input type="radio" name="Auto_no_climb" value="no"> No</label>
+            <label for="teamNumberField">Team Number</label>
+            <input type="number" id="teamNumberField" name="teamNumber" required>
+        </div>
+
+        <fieldset>
+            <legend>Live Performance</legend>
+            <div class="question">
+                <label for="scoreCount">Game Pieces Scored</label>
+                <input type="number" id="scoreCount" name="scoreCount" value="0">
             </div>
-        </div>
-
-        <div class="question">
-            <label>Auto Move</label>
-            <div class="radio-group">
-                <label><input type="radio" name="Auto_move" value="Yes" > Yes</label>
-                <label><input type="radio" name="Auto_no_move" value="No"> No</label>
+            
+            <div class="question">
+                <label>Robot Status</label>
+                <div class="radio-group">
+                    <label class="check-inline"><input type="radio" name="status" value="Operational" checked> Operational</label>
+                    <label class="check-inline"><input type="radio" name="status" value="Disabled"> Disabled</label>
+                </div>
             </div>
-        </div>
+        </fieldset>
 
-        <div class="question">
-            <label>Auto Score</label>
-            <div class="radio-group">
-                <label><input type="radio" name="Auto_score" value="Yes"> Yes</label>
-                <label><input type="radio" name="Auto_no_score" value="No"> No</label>
+        <fieldset>
+            <legend>Endgame Result</legend>
+            <div class="question">
+                <label>Climb Success?</label>
+                <div class="radio-group">
+                    <label class="check-inline"><input type="radio" name="matchClimb" value="Success"> Success</label>
+                    <label class="check-inline"><input type="radio" name="matchClimb" value="Fail"> Fail</label>
+                    <label class="check-inline"><input type="radio" name="matchClimb" value="N/A"> N/A</label>
+                </div>
             </div>
-        </div>
+        </fieldset>
 
         <div class="question">
-            <label>Obstacles</label>
-            <label><input type="checkbox" name="overBump"> Can it go over the <b>Bump</b>?</label>
-            <label><input type="checkbox" name="underTrench"> Can it go under the <b>Trench</b>?</label>
+            <label for="matchNotes">Match Notes</label>
+            <textarea id="matchNotes" name="matchNotes" rows="4" placeholder="Defense, driver speed, or breakages..."></textarea>
         </div>
 
-        <div class="question">
-            <label>Can you climb?</label>
-            <div class="radio-group">
-                <label><input type="radio" name="climb" value="Yes"> Yes</label>
-                <label><input type="radio" name="climb" value="No"> No</label>
-            </div>
-        </div>
-
-        <div class="question">
-            <label for="ballCapacity">Max balls scored in one cycle?</label>
-            <input type="number" id="ballCapacity" name="ballCapacity" min="0">
-        </div>
-
-        <div class="question">
-            <label for="autos">Describe Autonomous Routines</label>
-            <textarea id="autos" name="autos" rows="3" placeholder="e.g. 3 ball auto, move off line..."></textarea>
-        </div>
-
-        <button type="submit">Submit Data</button>
+        <button type="submit">Submit Match Data</button>
     </form>
-
 </body>
 </html>
