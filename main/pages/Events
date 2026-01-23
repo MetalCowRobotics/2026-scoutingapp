@@ -1,0 +1,297 @@
+import React, { useState } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { 
+  ArrowLeft, 
+  Search,
+  Trophy,
+  Calendar,
+  MapPin,
+  Check,
+  Loader2,
+  Download,
+  RefreshCw
+} from 'lucide-react';
+import tbaService from '@/components/scouting/TBAService';
+import { toast } from 'sonner';
+
+export default function Events() {
+  const [search, setSearch] = useState('');
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [tbaEvents, setTbaEvents] = useState([]);
+  const [loadingTBA, setLoadingTBA] = useState(false);
+  const [importingEvent, setImportingEvent] = useState(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  const { data: events = [], isLoading } = useQuery({
+    queryKey: ['events'],
+    queryFn: () => base44.entities.Event.list('-start_date')
+  });
+
+  const setActiveMutation = useMutation({
+    mutationFn: async (eventKey) => {
+      // Deactivate all events
+      const allEvents = await base44.entities.Event.list();
+      for (const event of allEvents) {
+        if (event.is_active) {
+          await base44.entities.Event.update(event.id, { is_active: false });
+        }
+      }
+      // Activate selected event
+      const targetEvent = allEvents.find(e => e.event_key === eventKey);
+      if (targetEvent) {
+        await base44.entities.Event.update(targetEvent.id, { is_active: true });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['activeEvent'] });
+      toast.success('Event activated!');
+    }
+  });
+
+  const searchTBAEvents = async () => {
+    const apiKey = tbaService.getApiKey();
+    if (!apiKey) {
+      toast.error('Please set your TBA API key in Settings');
+      return;
+    }
+
+    setLoadingTBA(true);
+    try {
+      const results = await tbaService.searchEvents(year, search);
+      setTbaEvents(results.sort((a, b) => new Date(a.start_date) - new Date(b.start_date)));
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setLoadingTBA(false);
+    }
+  };
+
+  const importEvent = async (tbaEvent) => {
+    setImportingEvent(tbaEvent.key);
+    try {
+      // Check if event already exists
+      const existing = events.find(e => e.event_key === tbaEvent.key);
+      if (existing) {
+        toast.info('Event already imported');
+        setImportingEvent(null);
+        return;
+      }
+
+      // Import event
+      await base44.entities.Event.create({
+        event_key: tbaEvent.key,
+        event_name: tbaEvent.name,
+        event_type: tbaEvent.event_type_string,
+        city: tbaEvent.city,
+        state_prov: tbaEvent.state_prov,
+        country: tbaEvent.country,
+        start_date: tbaEvent.start_date,
+        end_date: tbaEvent.end_date,
+        year: tbaEvent.year,
+        is_active: false
+      });
+
+      // Import teams
+      const teams = await tbaService.getEventTeams(tbaEvent.key);
+      for (const team of teams) {
+        const existingTeam = await base44.entities.Team.filter({ team_number: team.team_number });
+        if (existingTeam.length === 0) {
+          await base44.entities.Team.create({
+            team_number: team.team_number,
+            team_name: team.nickname,
+            city: team.city,
+            state_prov: team.state_prov,
+            country: team.country,
+            rookie_year: team.rookie_year,
+            website: team.website,
+            tba_key: team.key
+          });
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+      toast.success(`Imported ${tbaEvent.name} with ${teams.length} teams!`);
+      setDialogOpen(false);
+    } catch (error) {
+      toast.error('Failed to import event: ' + error.message);
+    } finally {
+      setImportingEvent(null);
+    }
+  };
+
+  const filteredEvents = events.filter(e => 
+    e.event_name?.toLowerCase().includes(search.toLowerCase()) ||
+    e.event_key?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-white">
+      {/* Header */}
+      <div className="sticky top-0 bg-slate-950/95 backdrop-blur border-b border-slate-800 z-10">
+        <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
+          <Link to={createPageUrl('Home')}>
+            <Button variant="ghost" size="icon" className="text-slate-400">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          </Link>
+          <h1 className="font-semibold">Events</h1>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                <Download className="w-4 h-4 mr-1" /> Import
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-slate-900 border-slate-700 text-white max-h-[80vh] overflow-hidden flex flex-col">
+              <DialogHeader>
+                <DialogTitle>Import from The Blue Alliance</DialogTitle>
+              </DialogHeader>
+              
+              <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
+                <div className="flex gap-2">
+                  <Select value={year.toString()} onValueChange={(v) => setYear(parseInt(v))}>
+                    <SelectTrigger className="w-24 bg-slate-800 border-slate-700">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[2025, 2024, 2023, 2022].map(y => (
+                        <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search events..."
+                    className="flex-1 bg-slate-800 border-slate-700"
+                    onKeyDown={(e) => e.key === 'Enter' && searchTBAEvents()}
+                  />
+                  <Button onClick={searchTBAEvents} disabled={loadingTBA}>
+                    {loadingTBA ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                  </Button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+                  {tbaEvents.length === 0 && !loadingTBA && (
+                    <p className="text-center text-slate-500 py-8">
+                      Search for events to import
+                    </p>
+                  )}
+                  {tbaEvents.map(event => (
+                    <Card 
+                      key={event.key} 
+                      className="bg-slate-800/50 border-slate-700/50 p-3"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{event.name}</p>
+                          <p className="text-xs text-slate-400">
+                            {event.city}, {event.state_prov} • {event.start_date}
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => importEvent(event)}
+                          disabled={importingEvent === event.key || events.some(e => e.event_key === event.key)}
+                          className={events.some(e => e.event_key === event.key) ? 'bg-slate-700' : 'bg-blue-600'}
+                        >
+                          {importingEvent === event.key ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : events.some(e => e.event_key === event.key) ? (
+                            <Check className="w-4 h-4" />
+                          ) : (
+                            'Import'
+                          )}
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+
+      <div className="max-w-lg mx-auto px-4 py-4">
+        {/* Search */}
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search events..."
+            className="pl-10 bg-slate-800/50 border-slate-700/50 text-white"
+          />
+        </div>
+
+        {/* Events List */}
+        <div className="space-y-3">
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+            </div>
+          ) : filteredEvents.length === 0 ? (
+            <Card className="bg-slate-800/50 border-slate-700/50 p-8 text-center">
+              <Trophy className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+              <p className="text-slate-400">No events yet</p>
+              <p className="text-sm text-slate-500">Import events from The Blue Alliance</p>
+            </Card>
+          ) : (
+            filteredEvents.map(event => (
+              <Card 
+                key={event.id} 
+                className={`bg-slate-800/50 border-slate-700/50 p-4 cursor-pointer transition-all ${
+                  event.is_active ? 'ring-2 ring-blue-500' : 'hover:bg-slate-800'
+                }`}
+                onClick={() => setActiveMutation.mutate(event.event_key)}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      {event.is_active && (
+                        <Badge className="bg-blue-500/20 text-blue-400 border-0 text-xs">
+                          Active
+                        </Badge>
+                      )}
+                    </div>
+                    <h3 className="font-semibold text-white">{event.event_name}</h3>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-slate-400">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {event.start_date}
+                      </span>
+                      {event.city && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {event.city}, {event.state_prov}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {event.is_active ? (
+                    <Check className="w-5 h-5 text-blue-400" />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full border-2 border-slate-600" />
+                  )}
+                </div>
+              </Card>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
