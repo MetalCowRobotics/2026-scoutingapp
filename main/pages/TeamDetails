@@ -1,0 +1,434 @@
+import React, { useMemo } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { 
+  ArrowLeft, 
+  ExternalLink,
+  Target,
+  Zap,
+  Trophy,
+  BarChart3,
+  Star,
+  AlertTriangle,
+  MapPin,
+  Calendar
+} from 'lucide-react';
+import StatCard from '@/components/scouting/StatCard';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+
+export default function TeamDetail() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const teamNumber = parseInt(urlParams.get('team'));
+
+  const { data: team } = useQuery({
+    queryKey: ['team', teamNumber],
+    queryFn: async () => {
+      const teams = await base44.entities.Team.filter({ team_number: teamNumber });
+      return teams[0] || { team_number: teamNumber, team_name: `Team ${teamNumber}` };
+    },
+    enabled: !!teamNumber
+  });
+
+  const { data: activeEvent } = useQuery({
+    queryKey: ['activeEvent'],
+    queryFn: async () => {
+      const events = await base44.entities.Event.filter({ is_active: true });
+      return events[0] || null;
+    }
+  });
+
+  const { data: matchScouts = [] } = useQuery({
+    queryKey: ['teamMatchScouts', teamNumber, activeEvent?.event_key],
+    queryFn: () => base44.entities.MatchScout.filter({ 
+      team_number: teamNumber,
+      event_key: activeEvent?.event_key 
+    }),
+    enabled: !!teamNumber && !!activeEvent
+  });
+
+  const { data: pitScout } = useQuery({
+    queryKey: ['teamPitScout', teamNumber, activeEvent?.event_key],
+    queryFn: async () => {
+      const scouts = await base44.entities.PitScout.filter({ 
+        team_number: teamNumber,
+        event_key: activeEvent?.event_key 
+      });
+      return scouts[0] || null;
+    },
+    enabled: !!teamNumber && !!activeEvent
+  });
+
+  // Calculate statistics
+  const stats = useMemo(() => {
+    if (matchScouts.length === 0) {
+      return null;
+    }
+
+    const avgAutoScore = matchScouts.reduce((s, m) => s + (parseFloat(m.auto_score) || 0), 0) / matchScouts.length;
+    const avgTeleopScore = matchScouts.reduce((s, m) => s + (parseFloat(m.teleop_score) || 0), 0) / matchScouts.length;
+    const avgTrap = matchScouts.reduce((s, m) => s + (m.trap_scores || 0), 0) / matchScouts.length;
+    const avgDriverSkill = matchScouts.reduce((s, m) => s + (m.driver_skill || 0), 0) / matchScouts.length;
+    const avgDefense = matchScouts.reduce((s, m) => s + (m.defense_rating || 0), 0) / matchScouts.length;
+    
+    const autoLeaveRate = matchScouts.filter(m => m.auto_leave).length / matchScouts.length * 100;
+    const climbRate = matchScouts.filter(m => m.endgame_status && m.endgame_status !== 'None' && m.endgame_status !== 'Parked').length / matchScouts.length * 100;
+    const deathRate = matchScouts.filter(m => m.robot_died).length / matchScouts.length * 100;
+
+    const totalAvg = avgAutoScore + avgTeleopScore;
+
+    return {
+      avgAutoScore: avgAutoScore.toFixed(1),
+      avgTeleopScore: avgTeleopScore.toFixed(1),
+      avgTrap: avgTrap.toFixed(1),
+      avgDriverSkill: avgDriverSkill.toFixed(1),
+      avgDefense: avgDefense.toFixed(1),
+      autoLeaveRate: autoLeaveRate.toFixed(0),
+      climbRate: climbRate.toFixed(0),
+      deathRate: deathRate.toFixed(0),
+      totalAvg: totalAvg.toFixed(1)
+    };
+  }, [matchScouts]);
+
+  // Chart data
+  const chartData = useMemo(() => {
+    return matchScouts
+      .sort((a, b) => a.match_number - b.match_number)
+      .map(m => ({
+        match: `Q${m.match_number}`,
+        auto: parseFloat(m.auto_score) || 0,
+        teleop: parseFloat(m.teleop_score) || 0
+      }));
+  }, [matchScouts]);
+
+  if (!teamNumber) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <p className="text-slate-400">Team not found</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-white pb-8">
+      {/* Header */}
+      <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-blue-900/30 border-b border-slate-800">
+        <div className="max-w-lg mx-auto px-4 py-4">
+          <Link to={createPageUrl('Teams')}>
+            <Button variant="ghost" size="icon" className="text-slate-400 mb-4">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          </Link>
+
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-4xl font-bold">{teamNumber}</h1>
+              <p className="text-lg text-slate-300">{team?.team_name || 'Loading...'}</p>
+              {team?.city && (
+                <p className="text-sm text-slate-500 flex items-center gap-1 mt-1">
+                  <MapPin className="w-3.5 h-3.5" />
+                  {team.city}, {team.state_prov}
+                </p>
+              )}
+            </div>
+            {team?.website && (
+              <a href={team.website} target="_blank" rel="noopener noreferrer">
+                <Button variant="outline" size="icon" className="border-slate-700">
+                  <ExternalLink className="w-4 h-4" />
+                </Button>
+              </a>
+            )}
+          </div>
+
+          <div className="flex gap-2 mt-4">
+            <Badge className="bg-blue-500/20 text-blue-400 border-0">
+              {matchScouts.length} matches
+            </Badge>
+            {pitScout && (
+              <Badge className="bg-emerald-500/20 text-emerald-400 border-0">
+                Pit Scouted
+              </Badge>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-lg mx-auto px-4 py-4">
+        <Tabs defaultValue="stats">
+          <TabsList className="w-full bg-slate-800/50 border border-slate-700/50 p-1 mb-4">
+            <TabsTrigger value="stats" className="flex-1 data-[state=active]:bg-slate-700">
+              Stats
+            </TabsTrigger>
+            <TabsTrigger value="matches" className="flex-1 data-[state=active]:bg-slate-700">
+              Matches
+            </TabsTrigger>
+            <TabsTrigger value="pit" className="flex-1 data-[state=active]:bg-slate-700">
+              Pit Info
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Stats Tab */}
+          <TabsContent value="stats" className="mt-0 space-y-4">
+            {!stats ? (
+              <Card className="bg-slate-800/50 border-slate-700/50 p-8 text-center">
+                <BarChart3 className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                <p className="text-slate-400">No match data yet</p>
+                <p className="text-sm text-slate-500">Scout some matches to see stats</p>
+              </Card>
+            ) : (
+              <>
+                {/* Overview */}
+                <div className="grid grid-cols-3 gap-3">
+                  <StatCard label="Avg Total" value={stats.totalAvg} icon={Trophy} color="amber" />
+                  <StatCard label="Avg Auto" value={stats.avgAutoScore} icon={Zap} color="blue" />
+                  <StatCard label="Avg Teleop" value={stats.avgTeleopScore} icon={Target} color="green" />
+                </div>
+
+                {/* Chart */}
+                {chartData.length > 1 && (
+                  <Card className="bg-slate-800/50 border-slate-700/50 p-4">
+                    <h3 className="text-sm font-medium text-slate-400 mb-4">Scoring Trend</h3>
+                    <ResponsiveContainer width="100%" height={150}>
+                      <BarChart data={chartData}>
+                        <XAxis dataKey="match" stroke="#64748b" fontSize={10} />
+                        <YAxis stroke="#64748b" fontSize={10} />
+                        <Tooltip 
+                          contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px' }}
+                          labelStyle={{ color: '#94a3b8' }}
+                        />
+                        <Bar dataKey="auto" fill="#3b82f6" stackId="a" radius={[0, 0, 0, 0]} />
+                        <Bar dataKey="teleop" fill="#22c55e" stackId="a" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </Card>
+                )}
+
+                {/* Detailed Stats */}
+                <Card className="bg-slate-800/50 border-slate-700/50 p-4">
+                  <h3 className="text-sm font-medium text-slate-400 mb-4">Scoring</h3>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-400">{stats.avgAutoScore}</div>
+                      <div className="text-xs text-slate-500">Avg Auto</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-emerald-400">{stats.avgTeleopScore}</div>
+                      <div className="text-xs text-slate-500">Avg Teleop</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-purple-400">{stats.avgTrap}</div>
+                      <div className="text-xs text-slate-500">Avg Trap</div>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="bg-slate-800/50 border-slate-700/50 p-4">
+                  <h3 className="text-sm font-medium text-slate-400 mb-4">Rates</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-emerald-400">{stats.autoLeaveRate}%</div>
+                      <div className="text-xs text-slate-500">Auto Leave</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-amber-400">{stats.climbRate}%</div>
+                      <div className="text-xs text-slate-500">Climb Rate</div>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="bg-slate-800/50 border-slate-700/50 p-4">
+                  <h3 className="text-sm font-medium text-slate-400 mb-4">Performance</h3>
+                  <div className="grid grid-cols-4 gap-3">
+                    <div className="text-center">
+                      <div className="flex justify-center mb-1">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star 
+                            key={i} 
+                            className={`w-3 h-3 ${i < Math.round(parseFloat(stats.avgDriverSkill)) ? 'fill-amber-400 text-amber-400' : 'text-slate-700'}`} 
+                          />
+                        ))}
+                      </div>
+                      <div className="text-xs text-slate-500">Driver</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="flex justify-center mb-1">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star 
+                            key={i} 
+                            className={`w-3 h-3 ${i < Math.round(parseFloat(stats.avgDefense)) ? 'fill-blue-400 text-blue-400' : 'text-slate-700'}`} 
+                          />
+                        ))}
+                      </div>
+                      <div className="text-xs text-slate-500">Defense</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-emerald-400">{stats.climbRate}%</div>
+                      <div className="text-xs text-slate-500">Climb</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-red-400">{stats.deathRate}%</div>
+                      <div className="text-xs text-slate-500">Died</div>
+                    </div>
+                  </div>
+                </Card>
+              </>
+            )}
+          </TabsContent>
+
+          {/* Matches Tab */}
+          <TabsContent value="matches" className="mt-0 space-y-3">
+            {matchScouts.length === 0 ? (
+              <Card className="bg-slate-800/50 border-slate-700/50 p-8 text-center">
+                <Target className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                <p className="text-slate-400">No matches scouted</p>
+              </Card>
+            ) : (
+              matchScouts
+                .sort((a, b) => b.match_number - a.match_number)
+                .map(match => (
+                  <Card key={match.id} className="bg-slate-800/50 border-slate-700/50 p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          match.alliance === 'Red' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'
+                        }`}>
+                          {match.match_type} {match.match_number}
+                        </span>
+                      </div>
+                      {match.robot_died && (
+                        <Badge variant="destructive" className="text-xs">
+                          <AlertTriangle className="w-3 h-3 mr-1" /> Died
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-4 gap-2 text-center text-sm">
+                      <div>
+                        <div className="text-lg font-bold text-blue-400">
+                          {match.auto_score || 0}
+                        </div>
+                        <div className="text-xs text-slate-500">Auto</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold text-emerald-400">
+                          {match.teleop_score || 0}
+                        </div>
+                        <div className="text-xs text-slate-500">Teleop</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold text-purple-400">{match.trap_scores || 0}</div>
+                        <div className="text-xs text-slate-500">Trap</div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-slate-300">{match.endgame_status || 'None'}</div>
+                        <div className="text-xs text-slate-500">Endgame</div>
+                      </div>
+                    </div>
+                    {(match.auto_notes || match.teleop_notes || match.endgame_notes) && (
+                      <div className="text-xs text-slate-400 mt-3 space-y-1">
+                        {match.auto_notes && <p><span className="text-blue-400">Auto:</span> {match.auto_notes}</p>}
+                        {match.teleop_notes && <p><span className="text-emerald-400">Teleop:</span> {match.teleop_notes}</p>}
+                        {match.endgame_notes && <p><span className="text-purple-400">Endgame:</span> {match.endgame_notes}</p>}
+                      </div>
+                    )}
+                    {match.scouter_name && (
+                      <p className="text-xs text-slate-600 mt-2">Scouted by {match.scouter_name}</p>
+                    )}
+                  </Card>
+                ))
+            )}
+          </TabsContent>
+
+          {/* Pit Tab */}
+          <TabsContent value="pit" className="mt-0">
+            {!pitScout ? (
+              <Card className="bg-slate-800/50 border-slate-700/50 p-8 text-center">
+                <p className="text-slate-400">No pit scout data</p>
+                <Link to={createPageUrl('PitScout')}>
+                  <Button className="mt-4 bg-emerald-600 hover:bg-emerald-700">
+                    Scout Pit
+                  </Button>
+                </Link>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {pitScout.robot_image_url && (
+                  <img 
+                    src={pitScout.robot_image_url} 
+                    alt="Robot" 
+                    className="w-full h-48 object-cover rounded-xl"
+                  />
+                )}
+
+                <Card className="bg-slate-800/50 border-slate-700/50 p-4">
+                  <h3 className="text-sm font-medium text-slate-400 mb-3">Robot Info</h3>
+                  <div className="grid grid-cols-2 gap-y-3 text-sm">
+                    {pitScout.drivetrain && (
+                      <>
+                        <span className="text-slate-500">Drivetrain</span>
+                        <span className="text-white">{pitScout.drivetrain}</span>
+                      </>
+                    )}
+                    {pitScout.robot_weight && (
+                      <>
+                        <span className="text-slate-500">Weight</span>
+                        <span className="text-white">{pitScout.robot_weight} lbs</span>
+                      </>
+                    )}
+                    {pitScout.robot_height && (
+                      <>
+                        <span className="text-slate-500">Height</span>
+                        <span className="text-white">{pitScout.robot_height}"</span>
+                      </>
+                    )}
+                    {pitScout.motor_type && (
+                      <>
+                        <span className="text-slate-500">Motors</span>
+                        <span className="text-white">{pitScout.motor_type}</span>
+                      </>
+                    )}
+                    {pitScout.programming_language && (
+                      <>
+                        <span className="text-slate-500">Language</span>
+                        <span className="text-white">{pitScout.programming_language}</span>
+                      </>
+                    )}
+                  </div>
+                </Card>
+
+                <Card className="bg-slate-800/50 border-slate-700/50 p-4">
+                  <h3 className="text-sm font-medium text-slate-400 mb-3">Capabilities</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {pitScout.can_score_amp && <Badge className="bg-emerald-500/20 text-emerald-400">Amp</Badge>}
+                    {pitScout.can_score_speaker && <Badge className="bg-blue-500/20 text-blue-400">Speaker</Badge>}
+                    {pitScout.can_score_trap && <Badge className="bg-purple-500/20 text-purple-400">Trap</Badge>}
+                    {pitScout.can_climb && <Badge className="bg-amber-500/20 text-amber-400">Climb</Badge>}
+                    {pitScout.can_harmony && <Badge className="bg-pink-500/20 text-pink-400">Harmony</Badge>}
+                  </div>
+                </Card>
+
+                {pitScout.auto_capabilities && (
+                  <Card className="bg-slate-800/50 border-slate-700/50 p-4">
+                    <h3 className="text-sm font-medium text-slate-400 mb-2">Auto Capabilities</h3>
+                    <p className="text-sm text-slate-300">{pitScout.auto_capabilities}</p>
+                  </Card>
+                )}
+
+                {pitScout.notes && (
+                  <Card className="bg-slate-800/50 border-slate-700/50 p-4">
+                    <h3 className="text-sm font-medium text-slate-400 mb-2">Notes</h3>
+                    <p className="text-sm text-slate-300">{pitScout.notes}</p>
+                  </Card>
+                )}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+}
