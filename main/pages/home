@@ -1,0 +1,184 @@
+import React, { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { 
+  ClipboardList, 
+  Users, 
+  BarChart3, 
+  Settings,
+  ChevronRight,
+  Calendar,
+  Trophy,
+  Zap,
+  Target
+} from 'lucide-react';
+import OfflineIndicator from '@/components/scouting/OfflineIndicator';
+import StatCard from '@/components/scouting/StatCard';
+
+export default function Home() {
+  const [pendingSync, setPendingSync] = useState(0);
+
+  const { data: activeEvent } = useQuery({
+    queryKey: ['activeEvent'],
+    queryFn: async () => {
+      const events = await base44.entities.Event.filter({ is_active: true });
+      return events[0] || null;
+    }
+  });
+
+  const { data: matchScouts = [] } = useQuery({
+    queryKey: ['matchScouts', activeEvent?.event_key],
+    queryFn: () => activeEvent ? base44.entities.MatchScout.filter({ event_key: activeEvent.event_key }) : [],
+    enabled: !!activeEvent
+  });
+
+  const { data: pitScouts = [] } = useQuery({
+    queryKey: ['pitScouts', activeEvent?.event_key],
+    queryFn: () => activeEvent ? base44.entities.PitScout.filter({ event_key: activeEvent.event_key }) : [],
+    enabled: !!activeEvent
+  });
+
+  useEffect(() => {
+    const checkPending = () => {
+      const pending = JSON.parse(localStorage.getItem('pendingScouts') || '[]');
+      setPendingSync(pending.length);
+    };
+    checkPending();
+    const interval = setInterval(checkPending, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const uniqueTeamsScouted = new Set(matchScouts.map(m => m.team_number)).size;
+
+  const quickActions = [
+    {
+      icon: ClipboardList,
+      label: 'Match Scout',
+      description: 'Record match data',
+      href: createPageUrl('MatchScout'),
+      color: 'bg-blue-500'
+    },
+    {
+      icon: Users,
+      label: 'Pit Scout',
+      description: 'Survey pit info',
+      href: createPageUrl('PitScout'),
+      color: 'bg-emerald-500'
+    },
+    {
+      icon: BarChart3,
+      label: 'Team Analysis',
+      description: 'View team data',
+      href: createPageUrl('Teams'),
+      color: 'bg-purple-500'
+    },
+    {
+      icon: Settings,
+      label: 'Settings',
+      description: 'Configure app',
+      href: createPageUrl('Settings'),
+      color: 'bg-slate-500'
+    }
+  ];
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-white">
+      {/* Header */}
+      <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-blue-900/30 border-b border-slate-800">
+        <div className="max-w-lg mx-auto px-4 py-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">FRC Scout</h1>
+              <p className="text-slate-400 text-sm">Scouting made simple</p>
+            </div>
+            <OfflineIndicator />
+          </div>
+
+          {/* Active Event Card */}
+          {activeEvent ? (
+            <Card className="bg-slate-800/50 border-slate-700/50 p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <Badge variant="secondary" className="bg-blue-500/20 text-blue-400 border-0 mb-2">
+                    Active Event
+                  </Badge>
+                  <h2 className="text-lg font-semibold text-white">{activeEvent.event_name}</h2>
+                  <p className="text-sm text-slate-400 flex items-center gap-1 mt-1">
+                    <Calendar className="w-3.5 h-3.5" />
+                    {activeEvent.start_date}
+                  </p>
+                </div>
+                <Link to={createPageUrl('Events')}>
+                  <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white">
+                    <ChevronRight className="w-5 h-5" />
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+          ) : (
+            <Link to={createPageUrl('Events')}>
+              <Card className="bg-slate-800/50 border-slate-700/50 border-dashed p-4 hover:bg-slate-800 transition-colors">
+                <div className="flex items-center justify-center gap-3 text-slate-400">
+                  <Trophy className="w-5 h-5" />
+                  <span>Select an event to get started</span>
+                  <ChevronRight className="w-4 h-4" />
+                </div>
+              </Card>
+            </Link>
+          )}
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="max-w-lg mx-auto px-4 py-6">
+        <div className="grid grid-cols-2 gap-3 mb-8">
+          <StatCard 
+            label="Matches Scouted" 
+            value={matchScouts.length} 
+            icon={Target}
+            color="blue"
+          />
+          <StatCard 
+            label="Teams Scouted" 
+            value={uniqueTeamsScouted} 
+            icon={Users}
+            color="purple"
+          />
+          <StatCard 
+            label="Pit Surveys" 
+            value={pitScouts.length} 
+            icon={ClipboardList}
+            color="green"
+          />
+          <StatCard 
+            label="Pending Sync" 
+            value={pendingSync} 
+            icon={Zap}
+            color={pendingSync > 0 ? 'amber' : 'green'}
+          />
+        </div>
+
+        {/* Quick Actions */}
+        <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wide mb-4">Quick Actions</h3>
+        <div className="grid grid-cols-2 gap-3">
+          {quickActions.map((action) => (
+            <Link key={action.label} to={action.href}>
+              <Card className="bg-slate-800/50 border-slate-700/50 hover:bg-slate-800 hover:border-slate-600 transition-all p-4 h-full">
+                <div className={`w-10 h-10 rounded-xl ${action.color} flex items-center justify-center mb-3`}>
+                  <action.icon className="w-5 h-5 text-white" />
+                </div>
+                <h4 className="font-semibold text-white">{action.label}</h4>
+                <p className="text-xs text-slate-400 mt-0.5">{action.description}</p>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
