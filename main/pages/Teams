@@ -1,0 +1,184 @@
+import React, { useState, useMemo } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  ArrowLeft, 
+  Search,
+  Users,
+  Filter,
+  TrendingUp,
+  ChevronRight
+} from 'lucide-react';
+import TeamCard from '@/components/scouting/TeamCard';
+import OfflineIndicator from '@/components/scouting/OfflineIndicator';
+
+export default function Teams() {
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('all');
+
+  const { data: activeEvent } = useQuery({
+    queryKey: ['activeEvent'],
+    queryFn: async () => {
+      const events = await base44.entities.Event.filter({ is_active: true });
+      return events[0] || null;
+    }
+  });
+
+  const { data: teams = [] } = useQuery({
+    queryKey: ['teams'],
+    queryFn: () => base44.entities.Team.list()
+  });
+
+  const { data: matchScouts = [] } = useQuery({
+    queryKey: ['matchScouts', activeEvent?.event_key],
+    queryFn: () => activeEvent ? base44.entities.MatchScout.filter({ event_key: activeEvent.event_key }) : [],
+    enabled: !!activeEvent
+  });
+
+  const { data: pitScouts = [] } = useQuery({
+    queryKey: ['pitScouts', activeEvent?.event_key],
+    queryFn: () => activeEvent ? base44.entities.PitScout.filter({ event_key: activeEvent.event_key }) : [],
+    enabled: !!activeEvent
+  });
+
+  // Get match count per team
+  const matchCountByTeam = useMemo(() => {
+    const counts = {};
+    matchScouts.forEach(m => {
+      counts[m.team_number] = (counts[m.team_number] || 0) + 1;
+    });
+    return counts;
+  }, [matchScouts]);
+
+  // Get pit scouted teams
+  const pitScoutedTeams = useMemo(() => {
+    return new Set(pitScouts.map(p => p.team_number));
+  }, [pitScouts]);
+
+  // Get unique teams from scouts
+  const scoutedTeamNumbers = useMemo(() => {
+    const fromMatches = matchScouts.map(m => m.team_number);
+    const fromPits = pitScouts.map(p => p.team_number);
+    return new Set([...fromMatches, ...fromPits]);
+  }, [matchScouts, pitScouts]);
+
+  // Combine with team entities
+  const allTeams = useMemo(() => {
+    const teamMap = new Map();
+    
+    // Add teams from entity
+    teams.forEach(t => teamMap.set(t.team_number, t));
+    
+    // Add scouted teams not in entity
+    scoutedTeamNumbers.forEach(num => {
+      if (!teamMap.has(num)) {
+        teamMap.set(num, { team_number: num, team_name: `Team ${num}` });
+      }
+    });
+    
+    return Array.from(teamMap.values());
+  }, [teams, scoutedTeamNumbers]);
+
+  // Filter and search
+  const filteredTeams = useMemo(() => {
+    let result = allTeams;
+
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter(t => 
+        t.team_number.toString().includes(q) ||
+        t.team_name?.toLowerCase().includes(q)
+      );
+    }
+
+    if (filter === 'scouted') {
+      result = result.filter(t => matchCountByTeam[t.team_number] > 0);
+    } else if (filter === 'unscouted') {
+      result = result.filter(t => !matchCountByTeam[t.team_number]);
+    } else if (filter === 'pit') {
+      result = result.filter(t => pitScoutedTeams.has(t.team_number));
+    }
+
+    return result.sort((a, b) => a.team_number - b.team_number);
+  }, [allTeams, search, filter, matchCountByTeam, pitScoutedTeams]);
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-white">
+      {/* Header */}
+      <div className="sticky top-0 bg-slate-950/95 backdrop-blur border-b border-slate-800 z-10">
+        <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
+          <Link to={createPageUrl('Home')}>
+            <Button variant="ghost" size="icon" className="text-slate-400">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          </Link>
+          <h1 className="font-semibold">Teams</h1>
+          <OfflineIndicator />
+        </div>
+      </div>
+
+      <div className="max-w-lg mx-auto px-4 py-4">
+        {/* Search */}
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search teams..."
+            className="pl-10 bg-slate-800/50 border-slate-700/50 text-white"
+          />
+        </div>
+
+        {/* Filters */}
+        <Tabs value={filter} onValueChange={setFilter} className="mb-4">
+          <TabsList className="w-full bg-slate-800/50 border border-slate-700/50 p-1">
+            <TabsTrigger value="all" className="flex-1 text-xs data-[state=active]:bg-slate-700">
+              All
+            </TabsTrigger>
+            <TabsTrigger value="scouted" className="flex-1 text-xs data-[state=active]:bg-slate-700">
+              Scouted
+            </TabsTrigger>
+            <TabsTrigger value="unscouted" className="flex-1 text-xs data-[state=active]:bg-slate-700">
+              Unscouted
+            </TabsTrigger>
+            <TabsTrigger value="pit" className="flex-1 text-xs data-[state=active]:bg-slate-700">
+              Pit Done
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {/* Stats Bar */}
+        <div className="flex items-center justify-between text-xs text-slate-400 mb-4">
+          <span>{filteredTeams.length} teams</span>
+          <span>{scoutedTeamNumbers.size} with data</span>
+        </div>
+
+        {/* Team List */}
+        <div className="space-y-3">
+          {filteredTeams.length === 0 ? (
+            <Card className="bg-slate-800/50 border-slate-700/50 p-8 text-center">
+              <Users className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+              <p className="text-slate-400">No teams found</p>
+              <p className="text-sm text-slate-500">Import teams from The Blue Alliance</p>
+            </Card>
+          ) : (
+            filteredTeams.map(team => (
+              <TeamCard
+                key={team.team_number}
+                team={team}
+                matchCount={matchCountByTeam[team.team_number] || 0}
+                pitScouted={pitScoutedTeams.has(team.team_number)}
+              />
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
