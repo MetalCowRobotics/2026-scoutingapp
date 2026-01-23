@@ -1,0 +1,396 @@
+import React, { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { 
+  ArrowLeft, 
+  Save, 
+  Loader2,
+  Play,
+  Gamepad2,
+  Flag,
+  CheckCircle
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import Counter from '@/components/scouting/Counter';
+import RatingStars from '@/components/scouting/RatingStars';
+import ToggleButton from '@/components/scouting/ToggleButton';
+import OfflineIndicator from '@/components/scouting/OfflineIndicator';
+import { useOfflineStorage } from '@/components/scouting/useOfflineStorage';
+import { toast } from 'sonner';
+
+const initialFormState = {
+  match_number: '',
+  match_type: 'Qualification',
+  team_number: '',
+  alliance: 'Red',
+  driver_station: 1,
+  auto_leave: false,
+  auto_score: '',
+  auto_notes: '',
+  auto_climb: false,
+  teleop_score: '',
+  teleop_notes: '',
+  trap_scores: 0,
+  endgame_status: 'None',
+  endgame_notes: '',
+  defense_rating: 0,
+  driver_skill: 0,
+  robot_died: false,
+  scouter_name: ''
+};
+
+export default function MatchScout() {
+  const [form, setForm] = useState(initialFormState);
+  const [phase, setPhase] = useState('pre');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const navigate = useNavigate();
+  const { saveMatchScout, isOnline } = useOfflineStorage();
+
+  const { data: activeEvent } = useQuery({
+    queryKey: ['activeEvent'],
+    queryFn: async () => {
+      const events = await base44.entities.Event.filter({ is_active: true });
+      return events[0] || null;
+    }
+  });
+
+  // Load scouter name from settings
+  useEffect(() => {
+    const settings = JSON.parse(localStorage.getItem('scoutingSettings') || '{}');
+    if (settings.scouter_name) {
+      setForm(f => ({ ...f, scouter_name: settings.scouter_name }));
+    }
+  }, []);
+
+  const updateForm = (field, value) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async () => {
+    if (!form.team_number || !form.match_number) {
+      toast.error('Please enter team and match numbers');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await saveMatchScout({
+        ...form,
+        event_key: activeEvent?.event_key,
+        team_number: parseInt(form.team_number),
+        match_number: parseInt(form.match_number),
+        auto_score: form.auto_score ? parseInt(form.auto_score) : 0,
+        teleop_score: form.teleop_score ? parseInt(form.teleop_score) : 0
+      });
+      
+      setSaved(true);
+      toast.success(isOnline ? 'Match saved!' : 'Saved offline - will sync when online');
+      
+      setTimeout(() => {
+        setForm(initialFormState);
+        setPhase('pre');
+        setSaved(false);
+        // Keep scouter name
+        const settings = JSON.parse(localStorage.getItem('scoutingSettings') || '{}');
+        if (settings.scouter_name) {
+          setForm(f => ({ ...f, scouter_name: settings.scouter_name }));
+        }
+      }, 1500);
+    } catch (error) {
+      toast.error('Failed to save match');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (saved) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="w-20 h-20 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="w-10 h-10 text-emerald-400" />
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">Match Saved!</h2>
+          <p className="text-slate-400">Starting next match...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-white pb-24">
+      {/* Header */}
+      <div className="sticky top-0 bg-slate-950/95 backdrop-blur border-b border-slate-800 z-10">
+        <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
+          <Link to={createPageUrl('Home')}>
+            <Button variant="ghost" size="icon" className="text-slate-400">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          </Link>
+          <h1 className="font-semibold">Match Scout</h1>
+          <OfflineIndicator />
+        </div>
+      </div>
+
+      <div className="max-w-lg mx-auto px-4 py-4">
+        {/* Match Info */}
+        <Card className="bg-slate-800/50 border-slate-700/50 p-4 mb-4">
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <Label className="text-slate-400 text-xs">Match #</Label>
+              <Input
+                type="number"
+                value={form.match_number}
+                onChange={(e) => updateForm('match_number', e.target.value)}
+                className="bg-slate-900 border-slate-700 text-white text-lg font-bold"
+                placeholder="1"
+              />
+            </div>
+            <div>
+              <Label className="text-slate-400 text-xs">Team #</Label>
+              <Input
+                type="number"
+                value={form.team_number}
+                onChange={(e) => updateForm('team_number', e.target.value)}
+                className="bg-slate-900 border-slate-700 text-white text-lg font-bold"
+                placeholder="254"
+              />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <Label className="text-slate-400 text-xs">Type</Label>
+              <Select value={form.match_type} onValueChange={(v) => updateForm('match_type', v)}>
+                <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Practice">Practice</SelectItem>
+                  <SelectItem value="Qualification">Quals</SelectItem>
+                  <SelectItem value="Playoff">Playoff</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-slate-400 text-xs">Alliance</Label>
+              <div className="flex gap-1 mt-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  className={`flex-1 ${form.alliance === 'Red' ? 'bg-red-600' : 'bg-slate-700'}`}
+                  onClick={() => updateForm('alliance', 'Red')}
+                >
+                  Red
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  className={`flex-1 ${form.alliance === 'Blue' ? 'bg-blue-600' : 'bg-slate-700'}`}
+                  onClick={() => updateForm('alliance', 'Blue')}
+                >
+                  Blue
+                </Button>
+              </div>
+            </div>
+            <div>
+              <Label className="text-slate-400 text-xs">Station</Label>
+              <div className="flex gap-1 mt-1">
+                {[1, 2, 3].map(n => (
+                  <Button
+                    key={n}
+                    type="button"
+                    size="sm"
+                    className={`flex-1 ${form.driver_station === n ? 'bg-blue-600' : 'bg-slate-700'}`}
+                    onClick={() => updateForm('driver_station', n)}
+                  >
+                    {n}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Phase Tabs */}
+        <Tabs value={phase} onValueChange={setPhase}>
+          <TabsList className="w-full bg-slate-800/50 border border-slate-700/50 p-1 mb-4">
+            <TabsTrigger value="pre" className="flex-1 data-[state=active]:bg-slate-700">
+              <Play className="w-4 h-4 mr-1" /> Auto
+            </TabsTrigger>
+            <TabsTrigger value="teleop" className="flex-1 data-[state=active]:bg-slate-700">
+              <Gamepad2 className="w-4 h-4 mr-1" /> Teleop
+            </TabsTrigger>
+            <TabsTrigger value="endgame" className="flex-1 data-[state=active]:bg-slate-700">
+              <Flag className="w-4 h-4 mr-1" /> End
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Auto Phase */}
+          <TabsContent value="pre" className="space-y-4 mt-0">
+            <ToggleButton
+              label="Left Starting Zone"
+              value={form.auto_leave}
+              onChange={(v) => updateForm('auto_leave', v)}
+              color="green"
+            />
+            <ToggleButton
+              label="Auto Climb"
+              value={form.auto_climb}
+              onChange={(v) => updateForm('auto_climb', v)}
+              color="blue"
+            />
+            <div>
+              <Label className="text-slate-400 text-xs">Auto Score</Label>
+              <Input
+                type="number"
+                value={form.auto_score}
+                onChange={(e) => updateForm('auto_score', e.target.value)}
+                className="bg-slate-900 border-slate-700 text-white text-lg font-bold mt-1"
+                placeholder="Enter auto score"
+              />
+            </div>
+            <div>
+              <Label className="text-slate-400 text-xs">Auto Notes</Label>
+              <Textarea
+                value={form.auto_notes}
+                onChange={(e) => updateForm('auto_notes', e.target.value)}
+                className="bg-slate-900 border-slate-700 text-white mt-1"
+                placeholder="Notes about auto performance..."
+                rows={4}
+              />
+            </div>
+          </TabsContent>
+
+          {/* Teleop Phase */}
+          <TabsContent value="teleop" className="space-y-4 mt-0">
+            <div>
+              <Label className="text-slate-400 text-xs">Teleop Score</Label>
+              <Input
+                type="number"
+                value={form.teleop_score}
+                onChange={(e) => updateForm('teleop_score', e.target.value)}
+                className="bg-slate-900 border-slate-700 text-white text-lg font-bold mt-1"
+                placeholder="Enter teleop score"
+              />
+            </div>
+            <div>
+              <Label className="text-slate-400 text-xs">Teleop Notes</Label>
+              <Textarea
+                value={form.teleop_notes}
+                onChange={(e) => updateForm('teleop_notes', e.target.value)}
+                className="bg-slate-900 border-slate-700 text-white mt-1"
+                placeholder="Notes about teleop performance..."
+                rows={4}
+              />
+            </div>
+          </TabsContent>
+
+          {/* Endgame Phase */}
+          <TabsContent value="endgame" className="space-y-4 mt-0">
+            <Counter
+              label="Trap Scores"
+              value={form.trap_scores}
+              onChange={(v) => updateForm('trap_scores', v)}
+              color="green"
+            />
+
+            <div>
+              <Label className="text-slate-400 text-xs mb-2 block">Endgame Status</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {['None', 'Parked', 'Onstage', 'Onstage Spotlit', 'Harmony'].map(status => (
+                  <Button
+                    key={status}
+                    type="button"
+                    className={`${
+                      form.endgame_status === status 
+                        ? 'bg-emerald-600 text-white' 
+                        : 'bg-slate-800 text-slate-300 border border-slate-700'
+                    }`}
+                    onClick={() => updateForm('endgame_status', status)}
+                  >
+                    {status}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <RatingStars
+                label="Defense Rating"
+                value={form.defense_rating}
+                onChange={(v) => updateForm('defense_rating', v)}
+              />
+              <RatingStars
+                label="Driver Skill"
+                value={form.driver_skill}
+                onChange={(v) => updateForm('driver_skill', v)}
+              />
+            </div>
+
+            <ToggleButton
+              label="Robot Died / Disabled"
+              value={form.robot_died}
+              onChange={(v) => updateForm('robot_died', v)}
+              color="red"
+            />
+
+            <div>
+              <Label className="text-slate-400 text-xs">Endgame Notes</Label>
+              <Textarea
+                value={form.endgame_notes}
+                onChange={(e) => updateForm('endgame_notes', e.target.value)}
+                className="bg-slate-900 border-slate-700 text-white mt-1"
+                placeholder="Notes about endgame performance..."
+                rows={4}
+              />
+            </div>
+
+            <div>
+              <Label className="text-slate-400 text-xs">Scouter Name</Label>
+              <Input
+                value={form.scouter_name}
+                onChange={(e) => updateForm('scouter_name', e.target.value)}
+                className="bg-slate-900 border-slate-700 text-white mt-1"
+                placeholder="Your name"
+              />
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Submit Button */}
+      <div className="fixed bottom-0 left-0 right-0 bg-slate-950/95 backdrop-blur border-t border-slate-800 p-4">
+        <div className="max-w-lg mx-auto">
+          <Button
+            onClick={handleSubmit}
+            disabled={saving || !form.team_number || !form.match_number}
+            className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-lg font-semibold"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="w-5 h-5 mr-2" />
+                Save Match
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
