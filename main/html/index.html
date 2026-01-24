@@ -12,6 +12,7 @@
         <ul>
             <li><a href="index.html">Pit Scouting</a></li>
             <li><a href="field.html">Field Scouting</a></li>
+            <li><a href="store.html">View Data</a></li>
         </ul> 
     </nav>
     
@@ -36,7 +37,7 @@
             <legend>Autonomous Period</legend>
             <div class="question">
                 <label for="fuelPreload">Number of fuel preloaded?</label>
-                <input type="number" id="fuelPreload" name="fuelPreload" min="0">
+                <input type="number" id="fuelPreload" name="fuelPreload" min="0" max="8">
             </div>
             
             <label class="check-inline"><input type="checkbox" name="autoMoved"> Auto Moved?</label>
@@ -45,7 +46,7 @@
             
             <div class="question" style="margin-top:10px;">
                 <label for="autos">Describe Autonomous Routines</label>
-                <textarea id="autos" name="autos" rows="2" placeholder="e.g. 3 ball auto, move off line..."></textarea>
+                <textarea id="autos" name="autos" rows="2" placeholder="e.g. 23 ball auto, move off line..."></textarea>
             </div>
         </fieldset>
 
@@ -91,7 +92,8 @@
             <label class="check-inline"><input type="checkbox" name="superchargedRP"> Supercharged Ranking Point?</label>
         </fieldset>
 
-        <button type="submit">Submit Pit Data</button>
+        <button type="submit" onclick="sendData()">Submit Pit Data</button>
     </form>
+    <script src="../js/script.js"></script>
 </body>
 </html>
