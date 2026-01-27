@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metal Cow | Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="index.html">Pit</a></li>
+            <li><a href="field.html">Field</a></li>
+            <li><a href="store.html">Data</a></li>
+            <li><a href="stats.html">Analytics</a></li>
+        </ul> 
+    </nav>
+
+    <h2>Team Analytics</h2>
+
+    <div class="chart-box">
+        <h3>Fuel Per Second</h3>
+        <canvas id="fuelChart"></canvas>
+    </div>
+
+    <div class="chart-box">
+        <h3>Climb Success Rate</h3>
+        <canvas id="climbChart"></canvas>
+    </div>
+
+    <div class="chart-box">
+        <h3>Ball Capacity</h3>
+        <canvas id="ballChart"></canvas>
+    </div>
+
+    <script src="../js/script.js"></script>
+</body>
+</html>

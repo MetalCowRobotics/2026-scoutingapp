@@ -2,42 +2,38 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Metal Cow | Data Rows</title>
+    <title>Metal Cow | Cloud Data</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="../css/styles.css">
-    <script src="../js/script.js"></script>
 </head>
 <body>
-    <img src="../img/metalcowlogo.png" class="metalcowlogo" alt="Metal Cow logo">
-    
     <nav>
         <ul>
-            <li><a href="index.html">Pit Scouting</a></li>
-            <li><a href="field.html">Field Scouting</a></li>
-            <li><a href="store.html">View Data</a></li>
+            <li><a href="login.html">Login</a></li>
+            <li><a href="index.html">Pit</a></li>
+            <li><a href="field.html">Field</a></li>
+            <li><a href="store.html">Data</a></li>
+            <li><a href="stats.html">Analytics</a></li>
         </ul> 
     </nav>
-
-    <h2>Scouting Database</h2>
-
-    <div class="scouting-box" style="max-width: 100%; overflow-x: auto;">
-        <table id="scoutingTable">
-            <thead>
-                <tr>
-                    <th>Type</th>
-                    <th>Team</th>
-                    <th>Match/Drive</th>
-                    <th>Score/Auto</th>
-                    <th>Endgame</th>
-                    <th>Notes</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody">
-                </tbody>
-        </table>
-    </div>
-
-    <button onclick="clearAll()" style="background:#ff4444; margin-top:20px;">Wipe All Data</button>
-
-    
+    <h2>Saved Scouting Data</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Team</th>
+                <th>Comp</th>
+                <th>Scout</th>
+                <th>Quick Info</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+    <div class="admin-controls" style="margin-top: 20px; text-align: center;">
+    <button type="button" id="clearBtn" onclick="clearAllData()" style="background-color: #d9534f; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+        ⚠️ Clear All Cloud Data
+    </button>
+</div>
+    <script src="../js/script.js"></script>
 </body>
 </html>

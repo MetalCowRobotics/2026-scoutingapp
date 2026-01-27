@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metal Cow | Login</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="scouting-container">
+    <img src="../img/metalcowlogo.png" class="metalcowlogo" alt="Metal Cow logo">
+    <h2>Scout Access</h2>
+    <div class="scouting-box">
+        <div class="question">
+            <label for="compName">Competition</label>
+            <input type="text" id="compName" placeholder="e.g. Midwest2026">
+        </div>
+        <div class="question">
+            <label for="username">Scout Name</label>
+            <input type="text" id="username" placeholder="Enter your name">
+        </div>
+        <button type="button" onclick="handleLogin()">Launch System</button>
+    </div>
+</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/script.js"></script>
+</body>
+</html>
