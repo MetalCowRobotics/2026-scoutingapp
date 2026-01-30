@@ -194,3 +194,56 @@ async function clearAllData() {
         }
     }
 }
+/* ---QUERY STRINGS (Passing the User) --- */
+
+// RUN THIS ON THE LOGIN PAGE
+const loginBtn = document.querySelector('button'); // Or your specific ID
+if (loginBtn) {
+    loginBtn.addEventListener('click', function() {
+        const name = document.querySelector('input[type="text"]').value;
+        if (name) {
+            // Sends them to the scouting page with the name in the URL
+            window.location.href = "login.html?user=" ;
+        } else {
+            alert("Please enter a username!");
+        }
+    });
+}
+
+// RUN THIS ON THE SCOUTING PAGE
+const urlParams = new URLSearchParams(window.location.search);
+const user = urlParams.get('user');
+
+
+/* --- PART 2: THE BLUE ALLIANCE (Fetching Teams) --- */
+
+async function fetchTBATeams() {
+    const teamDropdown = document.getElementById('team-list');
+    if (!teamDropdown) return; // Exit if we aren't on the scouting page
+
+    const apiKey = 'YOUR_TBA_KEY_HERE'; // Get this from The Blue Alliance account
+    const kansaskey = '2026mokc';
+    const peoriakey = '2026ilpe';
+
+    try {
+        const response = await fetch(`https://www.thebluealliance.com/api/v3/event/${kansaskey}/teams/simple`, {
+            headers: { 'X-TBA-Auth-Key': apiKey }
+        });
+        const teams = await response.json();
+
+        // Sort teams numerically
+        teams.sort((a, b) => a.team_number - b.team_number);
+
+        teams.forEach(team => {
+            let option = document.createElement('option');
+            option.value = team.team_number;
+            option.text = `${team.team_number} | ${team.nickname}`;
+            teamDropdown.appendChild(option);
+        });
+    } catch (error) {
+        console.error("Blue Alliance Error:", error);
+    }
+}
+
+// Fire the function when the page loads
+window.onload = fetchTBATeams;

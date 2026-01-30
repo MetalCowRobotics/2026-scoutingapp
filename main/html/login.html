@@ -13,13 +13,18 @@
     <div class="scouting-box">
         <div class="question">
             <label for="compName">Competition</label>
-            <input type="text" id="compName" placeholder="e.g. Midwest2026">
+            <div class="question">
+    <select id="compName">
+        <option value="2026ilpe">Central Illinois (Peoria)</option>
+        <option value="2026mokc">Greater Kansas City</option>
+    </select>
+</div>
         </div>
         <div class="question">
             <label for="username">Scout Name</label>
             <input type="text" id="username" placeholder="Enter your name">
         </div>
-        <button type="button" onclick="handleLogin()">Launch System</button>
+        <button type="button" id="login-submit-btn" onclick="handleLogin()">Launch System</button>
         
     </div>
 </div>
@@ -27,4 +32,5 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/script.js"></script>
 </body>
+
 </html>
