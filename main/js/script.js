@@ -5,26 +5,133 @@ const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 
 const scoutDB = window.supabase.createClient(SB_URL, SB_KEY);
 
+// --- CUSTOM MODAL (replaces alert) ---
+function _createAppModal() {
+    if (document.getElementById('app-modal-overlay')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'app-modal-overlay';
+    overlay.innerHTML = `
+        <div id="app-modal" role="dialog" aria-modal="true">
+            <div id="app-modal-header"></div>
+            <div id="app-modal-body"></div>
+            <div id="app-modal-input-container" style="display:none; margin-bottom:12px;">
+                <input id="app-modal-input" type="text" style="width:100%; padding:8px; border-radius:4px; border:1px solid #333; background:#0a0a0a; color:#e6e6e6;" />
+            </div>
+            <div id="app-modal-footer">
+                <button id="app-modal-cancel">Cancel</button>
+                <button id="app-modal-ok">OK</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#app-modal-ok').addEventListener('click', () => {
+        overlay.classList.remove('show');
+        const ev = new CustomEvent('appModalClosed');
+        overlay.dispatchEvent(ev);
+    });
+    overlay.querySelector('#app-modal-cancel').addEventListener('click', () => {
+        overlay.classList.remove('show');
+        const ev = new CustomEvent('appModalClosed');
+        overlay.dispatchEvent(ev);
+    });
+}
+
+function showModal(message, title) {
+    _createAppModal();
+    const overlay = document.getElementById('app-modal-overlay');
+    const header = overlay.querySelector('#app-modal-header');
+    const body = overlay.querySelector('#app-modal-body');
+
+    header.textContent = title || '';
+    body.textContent = message || '';
+
+    return new Promise(resolve => {
+        const onClose = () => {
+            overlay.removeEventListener('appModalClosed', onClose);
+            resolve();
+        };
+        overlay.addEventListener('appModalClosed', onClose);
+        // Show
+        overlay.classList.add('show');
+        // Focus OK for keyboard accessibility
+        setTimeout(() => overlay.querySelector('#app-modal-ok').focus(), 50);
+    });
+}
+
+function showConfirm(message, title) {
+    _createAppModal();
+    const overlay = document.getElementById('app-modal-overlay');
+    const header = overlay.querySelector('#app-modal-header');
+    const body = overlay.querySelector('#app-modal-body');
+    const ok = overlay.querySelector('#app-modal-ok');
+    const cancel = overlay.querySelector('#app-modal-cancel');
+    const inputContainer = overlay.querySelector('#app-modal-input-container');
+
+    header.textContent = title || '';
+    body.textContent = message || '';
+    inputContainer.style.display = 'none';
+
+    return new Promise(resolve => {
+        const onOk = () => { cleanup(); overlay.classList.remove('show'); resolve(true); };
+        const onCancel = () => { cleanup(); overlay.classList.remove('show'); resolve(false); };
+        const cleanup = () => { ok.removeEventListener('click', onOk); cancel.removeEventListener('click', onCancel); };
+        ok.addEventListener('click', onOk);
+        cancel.addEventListener('click', onCancel);
+        overlay.classList.add('show');
+        setTimeout(() => ok.focus(), 50);
+    });
+}
+
+function showPrompt(message, title, defaultValue = '') {
+    _createAppModal();
+    const overlay = document.getElementById('app-modal-overlay');
+    const header = overlay.querySelector('#app-modal-header');
+    const body = overlay.querySelector('#app-modal-body');
+    const ok = overlay.querySelector('#app-modal-ok');
+    const cancel = overlay.querySelector('#app-modal-cancel');
+    const inputContainer = overlay.querySelector('#app-modal-input-container');
+    const input = overlay.querySelector('#app-modal-input');
+
+    header.textContent = title || '';
+    body.textContent = message || '';
+    input.value = defaultValue;
+    inputContainer.style.display = 'block';
+
+    return new Promise(resolve => {
+        const onOk = () => { cleanup(); const v = input.value; overlay.classList.remove('show'); resolve(v); };
+        const onCancel = () => { cleanup(); overlay.classList.remove('show'); resolve(null); };
+        const cleanup = () => { ok.removeEventListener('click', onOk); cancel.removeEventListener('click', onCancel); };
+        ok.addEventListener('click', onOk);
+        cancel.addEventListener('click', onCancel);
+        overlay.classList.add('show');
+        setTimeout(() => input.focus(), 50);
+    });
+}
+
 // --- 2. LOGIN LOGIC ---
 async function handleLogin() {
     const user = document.getElementById('username').value;
     const comp = document.getElementById('compName').value;
 
     if (!user || !comp) {
-        alert("Please enter both Name and Competition!");
+        await showModal("Please enter both Name and Competition!");
         return;
     }
 
     try {
         const { error } = await scoutDB.auth.signInAnonymously();
-        if (error) throw error;
+        if (error) {
+            await showModal("signInAnonymously Error: " + (error.message || JSON.stringify(error)));
+            throw error;
+        }
 
         sessionStorage.setItem('scoutName', user);
         sessionStorage.setItem('activeComp', comp);
-        alert("Logged in as " + user);
-        window.location.href = "index.html"; 
+        await showModal("Logged in as " + user);
+        window.location.href = "../main/html/pit.html"; 
     } catch (err) {
-        alert("Login Error: " + err.message);
+        await showModal("Login Error: " + err.message);
     }
 }
 
@@ -36,7 +143,7 @@ async function sendData(event) {
     const activeComp = sessionStorage.getItem('activeComp');
 
     if (!scoutName) {
-        alert("Session missing. Please login again.");
+        await showModal("Session missing. Please login again.");
         window.location.href = "login.html";
         return;
     }
@@ -66,11 +173,11 @@ async function sendData(event) {
 
         if (error) throw error;
 
-        alert("Data Saved Successfully!");
+        await showModal("Data Saved Successfully!");
         form.reset();
     } catch (err) {
         console.error("Save error:", err);
-        alert("Error: " + err.message);
+        await showModal("Error: " + err.message);
     }
 }
 
@@ -169,10 +276,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- 5. DELETE LOGIC ---
 async function clearAllData() {
-    const confirmDelete = confirm("Are you sure you want to PERMANENTLY delete all scouting data?");
+    const confirmDelete = await showConfirm("Are you sure you want to PERMANENTLY delete all scouting data?");
     
     if (confirmDelete) {
-        const verify = prompt("Type 'DELETE ALL' to confirm:");
+        const verify = await showPrompt("Type 'DELETE ALL' to confirm:");
         
         if (verify === "JAI IS STUPID") {
             try {
@@ -184,31 +291,20 @@ async function clearAllData() {
 
                 if (error) throw error;
 
-                alert("Database cleared successfully!");
+                await showModal("Database cleared successfully!");
                 location.reload(); // Refresh to show empty table/charts
                 
             } catch (err) {
                 console.error("Delete failed:", err);
-                alert("Error: " + err.message);
+                await showModal("Error: " + err.message);
             }
         }
     }
 }
 /* ---QUERY STRINGS (Passing the User) --- */
 
-// RUN THIS ON THE LOGIN PAGE
 const loginBtn = document.querySelector('button'); // Or your specific ID
-if (loginBtn) {
-    loginBtn.addEventListener('click', function() {
-        const name = document.querySelector('input[type="text"]').value;
-        if (name) {
-            // Sends them to the scouting page with the name in the URL
-            window.location.href = "login.html?user=" ;
-        } else {
-            alert("Please enter a username!");
-        }
-    });
-}
+
 
 // RUN THIS ON THE SCOUTING PAGE
 const urlParams = new URLSearchParams(window.location.search);
@@ -224,7 +320,6 @@ async function fetchTBATeams() {
     const apiKey = 'YOUR_TBA_KEY_HERE'; // Get this from The Blue Alliance account
     const kansaskey = '2026mokc';
     const peoriakey = '2026ilpe';
-
     try {
         const response = await fetch(`https://www.thebluealliance.com/api/v3/event/${kansaskey}/teams/simple`, {
             headers: { 'X-TBA-Auth-Key': apiKey }
@@ -239,6 +334,17 @@ async function fetchTBATeams() {
             option.value = team.team_number;
             option.text = `${team.team_number} | ${team.nickname}`;
             teamDropdown.appendChild(option);
+            if (loginBtn) {
+        loginBtn.addEventListener('click', function() {
+            const name = document.querySelector('input[type="text"]').value;
+            if (name) {
+            // Sends them to the scouting page with the name in the URL
+            window.location.href = "login.html?user=" ;
+            } else {
+                showModal("Please enter a username!");
+            }
+    });
+}
         });
     } catch (error) {
         console.error("Blue Alliance Error:", error);
