@@ -2,38 +2,55 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Metal Cow | Cloud Data</title>
+    <title>Metal Cow | Data Vault</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="../css/styles.css">
 </head>
 <body>
     <nav>
         <ul>
-            <li><a href="login.html">Login</a></li>
-            <li><a href="pit.html">Pit</a></li>
+            <li><a href="../index.html">Login</a></li>
+             <li><a href="pit.html">Pit</a></li>
             <li><a href="field.html">Field</a></li>
             <li><a href="store.html">Data</a></li>
             <li><a href="stats.html">Analytics</a></li>
         </ul> 
     </nav>
-    <h2>Saved Scouting Data</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Type</th>
-                <th>Team</th>
-                <th>Comp</th>
-                <th>Scout</th>
-                <th>Quick Info</th>
-            </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-    </table>
-    <div class="admin-controls" style="margin-top: 20px; text-align: center;">
-    <button type="button" id="clearBtn" onclick="clearAllData()" style="background-color: #d9534f; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
-        ⚠️ Clear All Cloud Data
-    </button>
-</div>
+
+    <div class="scouting-container">
+        <h2>Pit Scouting Records</h2>
+        <div class="scouting-box">
+            <table id="pitTable">
+                <thead>
+                    <tr>
+                        <th>Team #</th>
+                        <th>Drive Train</th>
+                        <th>Weight</th>
+                        <th>Fuel/Sec</th>
+                        <th>Ball Cap</th>
+                        <th>Fuel Preload</th>
+                        <th>Climb</th>
+                        <th>Climb Level</th>
+                        <th>Auto Routine</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <h2 style="margin-top: 40px;">Field Match Records</h2>
+        <div class="scouting-box">
+            <table id="fieldTable">
+                <thead>
+                    <tr><th>Match #</th><th>Team #</th><th>Score</th><th>Climb</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        
+        <button id="clearBtn" onclick="clearAllData()" style="margin-top: 20px;">Wipe My Records</button>
+    </div>
+
     <script src="../js/script.js"></script>
 </body>
 </html>

@@ -44,7 +44,7 @@ h2 {
     letter-spacing: 2px;
 }
 
-.MCRimage3 {
+.metalcowlogo {
     width: auto;
     height: 200px;
     display: flex;
@@ -164,8 +164,13 @@ button:hover {
 }
 
 /* --- 7. TABLES --- */
+.scouting-box {
+    overflow-x: auto;
+}
+
 table {
     width: 100%;
+    min-width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
     background: #1a1a1a;
@@ -173,9 +178,11 @@ table {
 }
 
 th, td {
-    padding: 12px;
+    padding: 10px 8px;
     border: 1px solid #333;
     text-align: left;
+    font-size: 0.9rem;
+    white-space: nowrap;
 }
 
 th {

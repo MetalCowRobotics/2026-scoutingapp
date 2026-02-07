@@ -4,13 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Metal Cow | Analytics</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="../css/styles.css">
 </head>
 <body>
+
     <nav>
         <ul>
+            <li><a href="../index.html">Login</a></li>
             <li><a href="pit.html">Pit</a></li>
             <li><a href="field.html">Field</a></li>
             <li><a href="store.html">Data</a></li>
@@ -18,21 +20,45 @@
         </ul> 
     </nav>
 
-    <h2>Team Analytics</h2>
+    <div class="scouting-container">
+        
+        <div class="scouting-box" id="tbaSummary" style="margin-bottom: 25px;">
+            <h2 style="color: #39ff14; margin-top: 0; text-align: center;">Event Rankings (TBA)</h2>
+            <div id="rankingList" style="max-height: 300px; overflow-y: auto; background: #0a0a0a; padding: 10px; border-radius: 8px; border: 1px solid #333;">
+                <p style="text-align: center; color: #888;">Fetching live rankings from TBA...</p>
+            </div>
+        </div>
 
-    <div class="chart-box">
-        <h3>Fuel Per Second</h3>
-        <canvas id="fuelChart"></canvas>
-    </div>
+        <hr style="border: 0; border-top: 1px solid #333; margin: 30px 0;">
 
-    <div class="chart-box">
-        <h3>Climb Success Rate</h3>
-        <canvas id="climbChart"></canvas>
-    </div>
+        <h2 style="text-align: center;">Performance Analytics</h2>
 
-    <div class="chart-box">
-        <h3>Ball Capacity</h3>
-        <canvas id="ballChart"></canvas>
+        <div class="chart-box">
+            <h3 style="color: #000; margin-top: 0; font-size: 1rem; text-align: center;">Win Percentage (TBA)</h3>
+            <canvas id="fuelChart" width="400" height="200"></canvas>
+        </div>
+
+        <div class="chart-box">
+            <h3 style="color: #000; margin-top: 0; font-size: 1rem; text-align: center;">Ranking Points (TBA)</h3>
+            <canvas id="ballChart" width="400" height="200"></canvas>
+        </div>
+
+        <div class="chart-box">
+            <h3 style="color: #000; margin-top: 0; font-size: 1rem; text-align: center;">Total Wins (TBA)</h3>
+            <canvas id="preloadChart" width="400" height="200"></canvas>
+        </div>
+
+        <div class="chart-box">
+            <h3 style="color: #000; margin-top: 0; font-size: 1rem; text-align: center;">Event Ranking (TBA)</h3>
+            <canvas id="weightChart" width="400" height="200"></canvas>
+        </div>
+
+        <div class="chart-box">
+            <h3 style="color: #000; margin-top: 0; font-size: 1rem; text-align: center;">Climb Success Rate</h3>
+            <canvas id="climbChart" width="400" height="200"></canvas>
+        </div>
+
+        <button id="clearBtn" onclick="clearAllData()">Wipe My Records</button>
     </div>
 
     <script src="../js/script.js"></script>
