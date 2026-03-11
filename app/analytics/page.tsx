@@ -25,8 +25,8 @@ export default function AnalyticsPage() {
     }
 
     return (
-        <div className="container py-8 mx-auto">
-            <h1 className="text-3xl font-bold mb-6 text-center">Analytics Dashboard</h1>
+        <div className="container px-4 py-6 md:py-8 mx-auto">
+
             <AnalyticsDashboard />
         </div>
     )

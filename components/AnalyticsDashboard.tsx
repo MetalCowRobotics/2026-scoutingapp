@@ -109,7 +109,7 @@ export default function AnalyticsDashboard() {
     const [robotStatFilter, setRobotStatFilter] = useState<string[]>(['can_climb'])
     const [climbFilter, setClimbFilter] = useState<string>('all')
     const [compareStatFilter, setCompareStatFilter] = useState<string>('weight')
-    
+
     // TBA Data
     const [tbaEvent, setTbaEvent] = useState<TBAEvent | null>(null)
     const [tbaTeams, setTbaTeams] = useState<TBATeam[]>([])
@@ -117,7 +117,7 @@ export default function AnalyticsDashboard() {
     const [tbaLoading, setTbaLoading] = useState(false)
     const [tbaSearchKey, setTbaSearchKey] = useState(eventKey)
     const [tbaSubTab, setTbaSubTab] = useState<'teams' | 'matches' | 'rankings' | 'oprs' | 'districts' | 'status'>('teams')
-    
+
     // Extended TBA Data
     const [tbaRankings, setTbaRankings] = useState<TBARanking[]>([])
     const [tbaAlliances, setTbaAlliances] = useState<TBAAlliance[]>([])
@@ -222,7 +222,7 @@ export default function AnalyticsDashboard() {
     // Fetch TBA data when tab is tba
     useEffect(() => {
         if (activeTab !== 'tba') return
-        
+
         async function fetchTBAData() {
             setTbaLoading(true)
             try {
@@ -285,7 +285,7 @@ export default function AnalyticsDashboard() {
                 setTbaLoading(false)
             }
         }
-        
+
         fetchTBAData()
     }, [activeTab, eventKey])
 
@@ -480,64 +480,68 @@ export default function AnalyticsDashboard() {
     )
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-700">
-            <div className="flex flex-col md:flex-row justify-between items-end gap-6 bg-card p-8 rounded-3xl border shadow-xl">
-                <div className="space-y-2">
-                    <h1 className="text-4xl font-black tracking-tight flex items-center gap-3">
-                        <BarChart3 className="h-10 w-10 text-primary" /> Analytics
+        <div className="space-y-8 animate-in fade-in duration-700 px-4 md:px-0">
+            {/* Header */}
+            <div className="bg-card p-6 md:p-8 rounded-3xl border shadow-xl mb-6 flex flex-col lg:flex-row justify-between items-center gap-6">
+                <div className="space-y-2 w-full text-center lg:text-left">
+                    <h1 className="text-3xl md:text-4xl font-black tracking-tight flex items-center justify-center lg:justify-start gap-3">
+                        <BarChart3 className="h-8 w-8 md:h-10 md:w-10 text-primary" /> Analytics
                     </h1>
-                    <p className="text-muted-foreground text-lg">Team rankings, climb data, and match performance</p>
+                    <p className="text-muted-foreground text-sm md:text-lg">Team rankings, climb data, and match performance</p>
                 </div>
+            </div>
 
-                <div className="flex flex-wrap gap-4 w-full md:w-auto">
-                    <div className="flex flex-col sm:flex-row bg-muted p-1 rounded-xl border-2">
+            {/* Sticky Navigation */}
+            <div className="sticky top-2 md:top-20 z-40 flex flex-col lg:flex-row justify-between items-center gap-4 bg-background/95 backdrop-blur-sm p-3 border shadow-md rounded-2xl mb-8">
+                <div className="flex w-full overflow-x-auto custom-scrollbar lg:w-auto">
+                    <div className="flex w-full sm:w-max flex-row bg-muted dark:bg-muted/30 p-1 rounded-xl border-2 dark:border-border/50 shrink-0">
                         <button
                             onClick={() => setActiveTab('rankings')}
                             className={cn(
-                                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all",
-                                activeTab === 'rankings' ? "bg-background shadow-md text-primary" : "text-muted-foreground hover:text-foreground"
+                                "flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-bold transition-all",
+                                activeTab === 'rankings' ? "bg-background dark:bg-primary/15 shadow-md text-primary" : "text-muted-foreground hover:text-foreground dark:hover:bg-muted/50"
                             )}
                         >
-                            <Trophy className="h-4 w-4" /> Rankings
+                            <Trophy className="h-4 w-4" /> <span className="hidden sm:inline">Rankings</span>
                         </button>
                         <button
                             onClick={() => setActiveTab('graphs')}
                             className={cn(
-                                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all",
-                                activeTab === 'graphs' ? "bg-background shadow-md text-primary" : "text-muted-foreground hover:text-foreground"
+                                "flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-bold transition-all",
+                                activeTab === 'graphs' ? "bg-background dark:bg-primary/15 shadow-md text-primary" : "text-muted-foreground hover:text-foreground dark:hover:bg-muted/50"
                             )}
                         >
-                            <BarChart3 className="h-4 w-4" /> Graphs
+                            <BarChart3 className="h-4 w-4" /> <span className="hidden sm:inline">Graphs</span>
                         </button>
                         <button
                             onClick={() => setActiveTab('compare')}
                             className={cn(
-                                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all",
-                                activeTab === 'compare' ? "bg-background shadow-md text-primary" : "text-muted-foreground hover:text-foreground"
+                                "flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-bold transition-all",
+                                activeTab === 'compare' ? "bg-background dark:bg-primary/15 shadow-md text-primary" : "text-muted-foreground hover:text-foreground dark:hover:bg-muted/50"
                             )}
                         >
-                            <GitCompare className="h-4 w-4" /> Compare
+                            <GitCompare className="h-4 w-4" /> <span className="hidden sm:inline">Compare</span>
                         </button>
                         <button
                             onClick={() => setActiveTab('tba')}
                             className={cn(
-                                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all",
-                                activeTab === 'tba' ? "bg-background shadow-md text-primary" : "text-muted-foreground hover:text-foreground"
+                                "flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-bold transition-all",
+                                activeTab === 'tba' ? "bg-background dark:bg-primary/15 shadow-md text-primary" : "text-muted-foreground hover:text-foreground dark:hover:bg-muted/50"
                             )}
                         >
-                            <Globe className="h-4 w-4" /> TBA
+                            <Globe className="h-4 w-4" /> <span className="hidden sm:inline">TBA</span>
                         </button>
                     </div>
+                </div>
 
-                    <div className="relative flex-1 md:w-64">
-                        <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Search team..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10 h-12 bg-muted/50 border-2"
-                        />
-                    </div>
+                <div className="relative w-full lg:w-64">
+                    <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search team..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10 h-12 bg-muted/50 border-2 w-full"
+                    />
                 </div>
             </div>
 
@@ -792,8 +796,8 @@ export default function AnalyticsDashboard() {
                                             <SelectItem value="super_charged">Super Charged</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                    <Select 
-                                        value={compareStatFilter} 
+                                    <Select
+                                        value={compareStatFilter}
                                         onValueChange={(value) => value && setCompareStatFilter(value)}
                                     >
                                         <SelectTrigger className="w-48">
@@ -816,37 +820,37 @@ export default function AnalyticsDashboard() {
                         </CardHeader>
                         <CardContent className="overflow-x-auto">
                             <Table>
-                            <TableHeader className="bg-muted/50">
-                                <TableRow>
-                                    <TableHead>Team</TableHead>
-                                    <TableHead>{ROBOT_STAT_OPTIONS.find(o => o.value === compareStatFilter)?.label || compareStatFilter}</TableHead>
-                                    <TableHead>Avg Score</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredStats
-                                    .filter(t => {
-                                        if (climbFilter === 'can_climb') return t.can_climb
-                                        if (climbFilter === 'traversal') return t.traversal
-                                        if (climbFilter === 'super_charged') return t.super_charged
-                                        return true
-                                    })
-                                    .slice(0, 20)
-                                    .map(team => (
-                                        <TableRow key={team.team_number} className="hover:bg-muted/30">
-                                            <TableCell>
-                                                <Link href={`/teams/${team.team_number}`} className="font-black hover:text-primary">
-                                                    #{team.team_number}
-                                                </Link>
-                                            </TableCell>
-                                            <TableCell>
-                                                {renderStatCell(team, compareStatFilter)}
-                                            </TableCell>
-                                            <TableCell className="font-black text-primary">{Math.round(team.avg_score || 0)}</TableCell>
-                                        </TableRow>
-                                    ))}
-                            </TableBody>
-                        </Table>
+                                <TableHeader className="bg-muted/50">
+                                    <TableRow>
+                                        <TableHead>Team</TableHead>
+                                        <TableHead>{ROBOT_STAT_OPTIONS.find(o => o.value === compareStatFilter)?.label || compareStatFilter}</TableHead>
+                                        <TableHead>Avg Score</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredStats
+                                        .filter(t => {
+                                            if (climbFilter === 'can_climb') return t.can_climb
+                                            if (climbFilter === 'traversal') return t.traversal
+                                            if (climbFilter === 'super_charged') return t.super_charged
+                                            return true
+                                        })
+                                        .slice(0, 20)
+                                        .map(team => (
+                                            <TableRow key={team.team_number} className="hover:bg-muted/30">
+                                                <TableCell>
+                                                    <Link href={`/teams/${team.team_number}`} className="font-black hover:text-primary">
+                                                        #{team.team_number}
+                                                    </Link>
+                                                </TableCell>
+                                                <TableCell>
+                                                    {renderStatCell(team, compareStatFilter)}
+                                                </TableCell>
+                                                <TableCell className="font-black text-primary">{Math.round(team.avg_score || 0)}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                </TableBody>
+                            </Table>
                         </CardContent>
                     </Card>
                 </div>
@@ -884,21 +888,6 @@ export default function AnalyticsDashboard() {
                             {tbaEvent && (
                                 <Card className="border-none shadow-md overflow-hidden bg-gradient-to-br from-card to-muted/20">
                                     <CardHeader className="bg-primary/5 pb-4">
-                                        <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-                                            <div>
-                                                <CardTitle className="text-2xl font-bold">{tbaEvent.name}</CardTitle>
-                                                <CardDescription className="flex items-center gap-2 mt-1">
-                                                    <Badge variant="outline" className="font-mono">{tbaEvent.key}</Badge>
-                                                    <MapPin className="h-3 w-3" /> {tbaEvent.city}, {tbaEvent.state_prov}, {tbaEvent.country}
-                                                </CardDescription>
-                                            </div>
-                                            <div className="flex items-center gap-3 text-sm text-muted-foreground whitespace-nowrap bg-background/50 p-2 rounded-lg border">
-                                                <Calendar className="h-4 w-4" />
-                                                {new Date(tbaEvent.start_date).toLocaleDateString()} - {new Date(tbaEvent.end_date).toLocaleDateString()}
-                                            </div>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="p-0">
                                         {/* Sub-tabs */}
                                         <div className="flex w-full justify-start h-14 rounded-none border-b bg-muted/30 px-6 gap-4 overflow-x-auto">
                                             <button
@@ -908,7 +897,7 @@ export default function AnalyticsDashboard() {
                                                     tbaSubTab === 'teams' ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
                                                 )}
                                             >
-                                                <Users className="h-4 w-4" /> Teams ({tbaTeams.length})
+                                                <Users className="h-4 w-4" /> <span className="hidden md:inline">Teams</span> <span className="md:hidden">({tbaTeams.length})</span>
                                             </button>
                                             <button
                                                 onClick={() => setTbaSubTab('matches')}
@@ -917,7 +906,7 @@ export default function AnalyticsDashboard() {
                                                     tbaSubTab === 'matches' ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
                                                 )}
                                             >
-                                                <Trophy className="h-4 w-4" /> Matches ({tbaMatches.length})
+                                                <Trophy className="h-4 w-4" /> <span className="hidden md:inline">Matches</span> <span className="md:hidden">({tbaMatches.length})</span>
                                             </button>
                                             <button
                                                 onClick={() => setTbaSubTab('rankings')}
@@ -926,7 +915,7 @@ export default function AnalyticsDashboard() {
                                                     tbaSubTab === 'rankings' ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
                                                 )}
                                             >
-                                                <BarChart3 className="h-4 w-4" /> Rankings
+                                                <BarChart3 className="h-4 w-4" /> <span className="hidden md:inline">Rankings</span>
                                             </button>
                                             <button
                                                 onClick={() => setTbaSubTab('oprs')}
@@ -935,7 +924,7 @@ export default function AnalyticsDashboard() {
                                                     tbaSubTab === 'oprs' ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
                                                 )}
                                             >
-                                                <Gauge className="h-4 w-4" /> OPRs
+                                                <Gauge className="h-4 w-4" /> <span className="hidden md:inline">OPRs</span>
                                             </button>
                                             <button
                                                 onClick={() => setTbaSubTab('districts')}
@@ -944,7 +933,7 @@ export default function AnalyticsDashboard() {
                                                     tbaSubTab === 'districts' ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
                                                 )}
                                             >
-                                                <MapPin className="h-4 w-4" /> Districts
+                                                <MapPin className="h-4 w-4" /> <span className="hidden md:inline">Districts</span>
                                             </button>
                                             <button
                                                 onClick={() => setTbaSubTab('status')}
@@ -953,10 +942,11 @@ export default function AnalyticsDashboard() {
                                                     tbaSubTab === 'status' ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
                                                 )}
                                             >
-                                                <Activity className="h-4 w-4" /> Status
+                                                <Activity className="h-4 w-4" /> <span className="hidden md:inline">Status</span>
                                             </button>
                                         </div>
-
+                                    </CardHeader>
+                                    <CardContent className="p-0">
                                         {/* Sub-tab Content */}
                                         <div className="p-6">
                                             {tbaSubTab === 'teams' && (

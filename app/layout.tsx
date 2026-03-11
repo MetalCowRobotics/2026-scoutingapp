@@ -45,7 +45,7 @@ export default function RootLayout({
           <SettingsProvider>
             <PermissionsProvider>
               <Navbar />
-              <main>{children}</main>
+              <main className="min-h-screen md:pb-0 pb-20">{children}</main>
             </PermissionsProvider>
           </SettingsProvider>
         </ThemeProvider>

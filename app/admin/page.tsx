@@ -1,12 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import AdminRoute from '@/components/auth/AdminRoute'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Shield, Users, Database, Settings, Trash2, RefreshCw, AlertCircle, Check, UserPlus } from 'lucide-react'
+import { Shield, Users, Database, Settings, Trash2, RefreshCw, AlertCircle, UserPlus } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase'
 import { AlertModal } from '@/components/ui/AlertModal'
 import { useSettings } from '@/contexts/SettingsContext'
@@ -30,14 +32,12 @@ export default function AdminPage() {
     const [loading, setLoading] = useState(false)
     const [stats, setStats] = useState({ matchCount: 0, pitCount: 0 })
     const [searchTeam, setSearchTeam] = useState('')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [matches, setMatches] = useState<any[]>([])
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [pits, setPits] = useState<any[]>([])
     const supabase = createClient()
 
     // User roles management
-    const [userRoles, setUserRoles] = useState<Array<UserPermissions & { email: string }>>([])
+    const [userRoles, setUserRoles] = useState<Array<UserPermissions & { email: string; full_name?: string }>>([])
     const [newUserEmail, setNewUserEmail] = useState('')
     const [newUserRole, setNewUserRole] = useState<UserRole>('scout')
     const [roleModal, setRoleModal] = useState<{ open: boolean, email: string, currentRole: UserRole, currentPerms: UserPermissions }>({
@@ -112,16 +112,16 @@ export default function AdminPage() {
 
     const handleAddUserRole = async () => {
         if (!newUserEmail || !newUserRole) return
-        
+
         const defaultPerms = getDefaultPermissions(newUserRole)
-        
+
         const result = await setUserRole(
             currentUser?.id || '',
             newUserEmail,
             newUserRole,
             defaultPerms
         )
-        
+
         if (result.success) {
             showAlert('Success', `User ${newUserEmail} assigned role: ${newUserRole}`, 'success')
             setNewUserEmail('')
@@ -139,7 +139,7 @@ export default function AdminPage() {
             role,
             perms
         )
-        
+
         if (result.success) {
             showAlert('Success', `Updated role for ${roleModal.email}`, 'success')
             setRoleModal({ open: false, email: '', currentRole: 'scout', currentPerms: { role: 'scout', can_scout: true, can_view_analytics: false, can_manage_data: false, can_manage_users: false } })
@@ -302,20 +302,50 @@ export default function AdminPage() {
     }
 
     return (
+
         <AdminRoute>
-            <div className="container py-8 max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex flex-col gap-2">
-                        <h1 className="text-4xl font-black tracking-tight flex items-center gap-3">
-                            <Shield className="h-10 w-10 text-primary" />
-                            Admin Command Center
+            <div className="container px-4 py-8 md:py-8 max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
+
+                {/* Header */}
+                <div className="bg-card p-6 md:p-8 rounded-3xl border shadow-xl mb-6 flex flex-col lg:flex-row justify-between items-center lg:items-center gap-6">
+                    <div className="space-y-2 w-full text-center lg:text-left">
+                        <h1 className="text-3xl md:text-4xl font-black tracking-tight flex items-center justify-center lg:justify-start gap-3">
+                            <Shield className="h-8 w-8 md:h-10 md:w-10 text-primary" /> Admin Command
                         </h1>
-                        <p className="text-muted-foreground font-medium">Strategic control and system management for Metal Cow Robotics.</p>
+                        <p className="text-muted-foreground text-sm md:text-lg">Strategic control and system management.</p>
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-2">
-                        <Button variant={activeSection === 'overview' ? 'default' : 'outline'} onClick={() => setActiveSection('overview')}>Overview</Button>
-                        <Button variant={activeSection === 'data' ? 'default' : 'outline'} onClick={() => setActiveSection('data')}>Data Management</Button>
-                        <Button variant={activeSection === 'users' ? 'default' : 'outline'} onClick={() => setActiveSection('users')}>Users</Button>
+                </div>
+
+                {/* Sticky Navigation */}
+                <div className="sticky top-2 md:top-20 z-40 flex w-full lg:w-max mx-auto bg-background/95 backdrop-blur-sm p-2 rounded-2xl border shadow-lg mb-8">
+                    <div className="flex w-full flex-row bg-muted dark:bg-muted/30 p-1 rounded-xl border-2 dark:border-border/50">
+                        <button
+                            onClick={() => setActiveSection('overview')}
+                            className={cn(
+                                "flex-1 lg:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-bold transition-all",
+                                activeSection === 'overview' ? "bg-background dark:bg-primary/15 shadow-md text-primary" : "text-muted-foreground hover:text-foreground dark:hover:bg-muted/50"
+                            )}
+                        >
+                            <Shield className="h-4 w-4" /> <span className="hidden sm:inline">Overview</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveSection('data')}
+                            className={cn(
+                                "flex-1 lg:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-bold transition-all",
+                                activeSection === 'data' ? "bg-background dark:bg-primary/15 shadow-md text-primary" : "text-muted-foreground hover:text-foreground dark:hover:bg-muted/50"
+                            )}
+                        >
+                            <Database className="h-4 w-4" /> <span className="hidden sm:inline">Data</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveSection('users')}
+                            className={cn(
+                                "flex-1 lg:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-bold transition-all",
+                                activeSection === 'users' ? "bg-background dark:bg-primary/15 shadow-md text-primary" : "text-muted-foreground hover:text-foreground dark:hover:bg-muted/50"
+                            )}
+                        >
+                            <Users className="h-4 w-4" /> <span className="hidden sm:inline">Users</span>
+                        </button>
                     </div>
                 </div>
 
@@ -514,91 +544,91 @@ export default function AdminPage() {
                 )}
 
                 {activeSection === 'users' && (
-                    <Card className="border-2">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Users className="h-6 w-6 text-primary" />
-                                User Management
-                            </CardTitle>
-                            <CardDescription className="font-bold italic">Manage users and their permissions. Click on a user to edit access.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex gap-2">
-                                <Input
-                                    type="email"
-                                    placeholder="user@email.com"
-                                    value={newUserEmail}
-                                    onChange={(e) => setNewUserEmail(e.target.value)}
-                                    className="flex-1"
-                                />
-                                <select
-                                    value={newUserRole}
-                                    onChange={(e) => setNewUserRole(e.target.value as UserRole)}
-                                    className="h-10 px-3 rounded-md border bg-background text-sm"
-                                >
-<option value="viewer">Viewer</option>
+                    <div className="space-y-6">
+                        <Card className="border-2 shadow-sm">
+                            <CardHeader className="pb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-primary/10 rounded-lg">
+                                        <Users className="h-6 w-6 text-primary" />
+                                    </div>
+                                    <div>
+                                        <CardTitle className="text-xl font-black">User Access Control</CardTitle>
+                                        <CardDescription className="font-bold">Add and manage user roles across the platform.</CardDescription>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {/* Add User Form */}
+                                <div className="p-4 rounded-xl border-2 bg-muted/40 flex flex-col sm:flex-row gap-3 items-end">
+                                    <div className="space-y-2 flex-1 w-full">
+                                        <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">New User Email</Label>
+                                        <Input
+                                            type="email"
+                                            placeholder="scout@team.com"
+                                            value={newUserEmail}
+                                            onChange={(e) => setNewUserEmail(e.target.value)}
+                                            className="h-12 border-2"
+                                        />
+                                    </div>
+                                    <div className="space-y-2 w-full sm:w-40">
+                                        <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Initial Role</Label>
+                                        <select
+                                            value={newUserRole}
+                                            onChange={(e) => setNewUserRole(e.target.value as UserRole)}
+                                            className="flex h-12 w-full items-center justify-between rounded-md border-2 bg-background px-3 py-2 text-sm ring-offset-background appearance-none outline-none font-bold"
+                                        >
+                                            <option value="viewer">Viewer</option>
                                             <option value="scout">Scout</option>
                                             <option value="admin">Admin</option>
-                                </select>
-                                <Button onClick={handleAddUserRole} className="font-bold">
-                                    <UserPlus className="h-4 w-4 mr-2" />
-                                    Add
-                                </Button>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {userRoles.map(user => (
-                                    <div 
-                                        key={user.email} 
-                                        className="flex items-center justify-between p-3 bg-muted/50 rounded-xl border border-dashed hover:border-primary cursor-pointer transition-colors group"
-                                        onClick={() => setRoleModal({ 
-                                            open: true, 
-                                            email: user.email, 
-                                            currentRole: user.role,
-                                            currentPerms: {
-                                                role: user.role,
-                                                can_scout: user.can_scout,
-                                                can_view_analytics: user.can_view_analytics,
-                                                can_manage_data: user.can_manage_data,
-                                                can_manage_users: user.can_manage_users
-                                            }
-                                        })}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className={`h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-black uppercase ${
-                                                user.role === 'admin' ? 'bg-destructive/20 text-destructive' :
-                                                user.role === 'scout' ? 'bg-green-500/20 text-green-500' :
-                                                'bg-muted text-muted-foreground'
-                                            }`}>
-                                                {user.email.slice(0, 2).toUpperCase()}
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="font-black text-sm flex items-center gap-2">
-                                                    {user.email}
-                                                    <Check className="h-3 w-3 text-primary" />
-                                                </span>
-                                                <span className={`text-[9px] font-bold uppercase tracking-wider ${
-                                                    user.role === 'admin' ? 'text-destructive' :
-                                                    user.role === 'scout' ? 'text-green-500' :
-                                                    'text-muted-foreground'
-                                                }`}>
-                                                    {user.role}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="flex gap-1">
-                                            {user.can_scout && <span className="text-[8px] px-1.5 py-0.5 bg-green-500/20 text-green-600 rounded">Scout</span>}
-                                            {user.can_view_analytics && <span className="text-[8px] px-1.5 py-0.5 bg-blue-500/20 text-blue-600 rounded">Analytics</span>}
-                                            <Shield className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        </div>
+                                        </select>
                                     </div>
-                                ))}
-                                {userRoles.length === 0 && (
-                                    <div className="col-span-full py-12 text-center text-muted-foreground italic">No users found.</div>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
+                                    <Button onClick={handleAddUserRole} className="h-12 px-6 font-black w-full sm:w-auto">
+                                        <UserPlus className="h-5 w-5 mr-2" />
+                                        Provision
+                                    </Button>
+                                </div>
+
+                                {/* Users Grid */}
+                                <div>
+                                    <h4 className="text-sm font-black uppercase tracking-wider flex items-center gap-2 mb-4">
+                                        <div className="h-2 w-2 rounded-full bg-primary" />
+                                        Active Users ({userRoles.length})
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                        {userRoles.map(user => (
+                                            <Link
+                                                key={user.email}
+                                                href={`/admin/users/${encodeURIComponent(user.email)}`}
+                                                className="group flex items-center gap-4 p-4 bg-muted/20 border-2 rounded-2xl hover:border-primary/50 hover:bg-primary/5 transition-all w-full"
+                                            >
+                                                <div className={`h-12 w-12 rounded-xl flex items-center justify-center text-lg font-black uppercase shrink-0 transition-transform group-hover:scale-105 ${
+                                                    user.role === 'admin' ? 'bg-destructive/10 text-destructive border border-destructive/20' :
+                                                    user.role === 'scout' ? 'bg-green-500/10 text-green-600 border border-green-500/20' :
+                                                    'bg-muted/50 text-muted-foreground border border-border'
+                                                }`}>
+                                                    {(user.full_name || user.email).slice(0, 2).toUpperCase()}
+                                                </div>
+                                                <div className="flex flex-col min-w-0 flex-1">
+                                                    <span className="font-bold text-base truncate group-hover:text-primary transition-colors">{user.full_name || 'No Name Set'}</span>
+                                                    <span className="text-xs text-muted-foreground truncate mb-1">{user.email}</span>
+                                                    <span className={`text-[10px] items-center inline-flex w-fit px-2 py-0.5 rounded-full font-black uppercase tracking-wider ${
+                                                        user.role === 'admin' ? 'bg-destructive/10 text-destructive' :
+                                                        user.role === 'scout' ? 'bg-green-500/10 text-green-600' :
+                                                        'bg-muted text-muted-foreground'
+                                                    }`}>
+                                                        {user.role}
+                                                    </span>
+                                                </div>
+                                            </Link>
+                                        ))}
+                                        {userRoles.length === 0 && (
+                                            <div className="col-span-full py-12 text-center text-muted-foreground italic border-2 border-dashed rounded-xl">No users provisioned yet.</div>
+                                        )}
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
                 )}
 
 
@@ -722,13 +752,13 @@ function DeleteUserModal({ isOpen, onClose, scouterName, onConfirm }: {
     )
 }
 
-function RoleModal({ 
-    isOpen, 
-    onClose, 
-    email, 
-    currentRole, 
-    currentPerms, 
-    onSave 
+function RoleModal({
+    isOpen,
+    onClose,
+    email,
+    currentRole,
+    currentPerms,
+    onSave
 }: {
     isOpen: boolean
     onClose: () => void
@@ -777,41 +807,41 @@ function RoleModal({
 
                     <div className="space-y-3">
                         <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Permissions</Label>
-                        
+
                         <label className="flex items-center justify-between p-3 rounded-lg border cursor-pointer hover:bg-muted/50">
                             <span className="font-medium text-sm">Can Scout</span>
-                            <input 
-                                type="checkbox" 
+                            <input
+                                type="checkbox"
                                 checked={perms.can_scout}
                                 onChange={(e) => setPerms(p => ({ ...p, role: role, can_scout: e.target.checked }))}
                                 className="h-5 w-5"
                             />
                         </label>
-                        
+
                         <label className="flex items-center justify-between p-3 rounded-lg border cursor-pointer hover:bg-muted/50">
                             <span className="font-medium text-sm">View Analytics</span>
-                            <input 
-                                type="checkbox" 
+                            <input
+                                type="checkbox"
                                 checked={perms.can_view_analytics}
                                 onChange={(e) => setPerms(p => ({ ...p, role: role, can_view_analytics: e.target.checked }))}
                                 className="h-5 w-5"
                             />
                         </label>
-                        
+
                         <label className="flex items-center justify-between p-3 rounded-lg border cursor-lg hover:bg-muted/50">
                             <span className="font-medium text-sm">Manage Data</span>
-                            <input 
-                                type="checkbox" 
+                            <input
+                                type="checkbox"
                                 checked={perms.can_manage_data}
                                 onChange={(e) => setPerms(p => ({ ...p, role: role, can_manage_data: e.target.checked }))}
                                 className="h-5 w-5"
                             />
                         </label>
-                        
+
                         <label className="flex items-center justify-between p-3 rounded-lg border cursor-pointer hover:bg-muted/50">
                             <span className="font-medium text-sm">Manage Users</span>
-                            <input 
-                                type="checkbox" 
+                            <input
+                                type="checkbox"
                                 checked={perms.can_manage_users}
                                 onChange={(e) => setPerms(p => ({ ...p, role: role, can_manage_users: e.target.checked }))}
                                 className="h-5 w-5"

@@ -134,7 +134,7 @@ export const removeUserRole = async (adminUserId: string, targetEmail: string): 
     return { success: true }
 }
 
-export const getAllUserRoles = async (): Promise<Array<UserPermissions & { email: string }>> => {
+export const getAllUserRoles = async (): Promise<Array<UserPermissions & { email: string; full_name?: string }>> => {
     const { data, error } = await getSupabase()
         .from('profiles')
         .select('*')
@@ -144,6 +144,7 @@ export const getAllUserRoles = async (): Promise<Array<UserPermissions & { email
 
     return (data || []).map((p: any) => ({
         email: p.email,
+        full_name: p.full_name || null,
         role: p.role || 'viewer',
         can_scout: p.can_scout || false,
         can_view_analytics: p.can_view_analytics || false,

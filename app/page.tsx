@@ -42,7 +42,21 @@ export default function Home() {
             ))}
 
             {/* Hero Section */}
-            <section className="min-h-[85vh] flex flex-col items-center justify-center px-4 relative">
+            <section className="min-h-[80vh] md:min-h-[85vh] flex flex-col items-center justify-start md:justify-center px-4 pt-16 md:pt-0 relative mb-12">
+                {/* Mobile Title */}
+                <div className={`mb-12 space-y-6 text-center max-w-3xl transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                    <h1 className="text-5xl md:text-7xl font-black tracking-tight">
+                        <span className="bg-gradient-to-r from-primary to-green-400 bg-clip-text text-transparent">
+                            Metal Cow
+                        </span>
+                        <br />
+                        <span className="text-foreground">Scouting</span>
+                    </h1>
+                    <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto">
+                        The ultimate robotics scouting platform.
+                        <span className="text-foreground font-medium"> Capture data. Analyze trends. Win matches.</span>
+                    </p>
+                </div>
                 {/* Main CTA Button */}
                 <div className="relative group mb-8">
                     <div className="absolute -inset-1 bg-gradient-to-r from-primary via-green-400 to-primary rounded-full blur-lg opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse" />
@@ -56,19 +70,7 @@ export default function Home() {
                     </Link>
                 </div>
 
-                <div className={`space-y-6 text-center max-w-3xl transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-                    <h1 className="text-5xl md:text-7xl font-black tracking-tight">
-                        <span className="bg-gradient-to-r from-primary to-green-400 bg-clip-text text-transparent">
-                            Metal Cow
-                        </span>
-                        <br />
-                        <span className="text-foreground">Scouting</span>
-                    </h1>
-                    <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto">
-                        The ultimate robotics scouting platform. 
-                        <span className="text-foreground font-medium"> Capture data. Analyze trends. Win matches.</span>
-                    </p>
-                </div>
+
 
                 {/* Stats */}
                 <div className={`mt-12 flex flex-wrap justify-center gap-8 md:gap-16 transition-all duration-1000 delay-300 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>

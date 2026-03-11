@@ -15,7 +15,6 @@ import { AlertModal } from '@/components/ui/AlertModal'
 
 function EventSearch({ currentEventKey, onSelect }: { currentEventKey: string, onSelect: (key: string) => void }) {
     const [query, setQuery] = useState('')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [suggestions, setSuggestions] = useState<any[]>([])
     const [loading, setLoading] = useState(false)
     const [year, setYear] = useState(new Date().getFullYear().toString())
@@ -30,7 +29,6 @@ function EventSearch({ currentEventKey, onSelect }: { currentEventKey: string, o
             try {
                 const events = await getTBAData(`/events/${year}/simple`)
                 const matches = events
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     .filter((e: any) =>
                         (e.name?.toLowerCase() || '').includes(query.toLowerCase()) ||
                         (e.city?.toLowerCase() || '').includes(query.toLowerCase()) ||
@@ -172,38 +170,37 @@ export default function SettingsPage() {
     }
 
     return (
-        <div className="container py-8 max-w-3xl mx-auto space-y-8 animate-in fade-in duration-500">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-primary/10 rounded-2xl">
-                        <SettingsIcon className="h-8 w-8 text-primary" />
-                    </div>
-                    <div>
-                        <h1 className="text-3xl font-black tracking-tight">Settings</h1>
-                        <p className="text-muted-foreground">Configure your scouting preferences</p>
-                    </div>
+        <div className="container px-4 py-8 md:py-8 max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
+            {/* Header */}
+            <div className="flex flex-col lg:flex-row justify-between items-center lg:items-end gap-6 bg-card p-6 md:p-8 rounded-3xl border shadow-xl">
+                <div className="space-y-2 w-full lg:w-auto text-center lg:text-left">
+                    <h1 className="text-3xl md:text-4xl font-black tracking-tight flex items-center justify-center lg:justify-start gap-3">
+                        <SettingsIcon className="h-8 w-8 md:h-10 md:w-10 text-primary" /> Settings
+                    </h1>
+                    <p className="text-muted-foreground text-sm md:text-lg">Configure your scouting preferences.</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full lg:w-auto justify-center lg:justify-end">
                     <Button 
                         variant="outline" 
                         size="icon" 
                         onClick={handleReset} 
-                        className="h-10 w-10"
+                        className="h-12 w-12 sm:h-10 sm:w-10"
                         title="Reset Settings"
                     >
-                        <RotateCcw className="h-4 w-4" />
+                        <RotateCcw className="h-5 w-5 sm:h-4 sm:w-4" />
                     </Button>
                     <Button 
                         onClick={handleSave} 
                         disabled={saving} 
-                        className="h-10 w-10 p-0"
+                        className="h-12 px-6 sm:h-10 sm:px-4 font-bold"
                         title="Save Settings"
                     >
                         {saving ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Loader2 className="h-5 w-5 sm:h-4 sm:w-4 animate-spin mr-2" />
                         ) : (
-                            <Save className="h-4 w-4" />
+                            <Save className="h-5 w-5 sm:h-4 sm:w-4 mr-2" />
                         )}
+                        Save Changes
                     </Button>
                 </div>
             </div>
