@@ -168,7 +168,7 @@ function LoginForm() {
                                     Forgot password?
                                 </Button>
                             </div>
-                        )
+                        )}
                     </CardContent>
                     <CardFooter className="flex flex-col space-y-2 pt-4">
                         <Button className="w-full h-11 font-bold text-lg" type="submit" disabled={loading}>
