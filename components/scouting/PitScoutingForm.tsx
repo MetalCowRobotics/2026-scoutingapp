@@ -181,6 +181,7 @@ export default function PitScoutingForm() {
         top_speed: 12,
         fuel_per_second: 10,
         primary_role: 'Offense',
+        primary_roles: ['Offense'],
         climb_level: '1',
         climbs_in_auto: false,
         obstacle_handling: 'None',
@@ -211,6 +212,23 @@ export default function PitScoutingForm() {
 
     const handleInputChange = (field: string, value: any) => {
         setFormData((prev) => ({ ...prev, [field]: value }))
+    }
+
+    const togglePrimaryRole = (role: string) => {
+        setFormData((prev) => {
+            const current = new Set(prev.primary_roles || [])
+            if (current.has(role)) {
+                current.delete(role)
+            } else {
+                current.add(role)
+            }
+            const updated = Array.from(current)
+            return {
+                ...prev,
+                primary_roles: updated,
+                primary_role: updated[0] || '',
+            }
+        })
     }
 
     const validateStep = () => {
@@ -267,7 +285,7 @@ export default function PitScoutingForm() {
                     fuel_capacity: formData.fuel_capacity,
                     top_speed: formData.top_speed,
                     fuel_per_second: formData.fuel_per_second,
-                    primary_role: formData.primary_role,
+                    primary_role: (formData.primary_roles || [formData.primary_role || '']).join(', '),
                     climb_level: parseInt(formData.climb_level),
                     climbs_in_auto: formData.climbs_in_auto,
                     obstacle_handling: formData.obstacle_handling,
@@ -295,6 +313,7 @@ export default function PitScoutingForm() {
                     top_speed: 12,
                     fuel_per_second: 10,
                     primary_role: 'Offense',
+                    primary_roles: ['Offense'],
                     climb_level: '1',
                     climbs_in_auto: false,
                     obstacle_handling: 'None',
@@ -545,17 +564,20 @@ export default function PitScoutingForm() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Primary Game Role</Label>
-                                <Select onValueChange={(v) => handleInputChange('primary_role', v)} value={formData.primary_role}>
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Offense">Offense</SelectItem>
-                                        <SelectItem value="Defense">Defense</SelectItem>
-                                        <SelectItem value="Hybrid">Hybrid</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <Label>Primary Game Role(s)</Label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {['Offense', 'Defense', 'Hybrid', 'Passer'].map((role) => (
+                                        <label key={role} className="flex items-center space-x-2 rounded-lg p-2 border border-muted/40 hover:border-primary cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.primary_roles?.includes(role)}
+                                                onChange={() => togglePrimaryRole(role)}
+                                                className="h-4 w-4"
+                                            />
+                                            <span className="text-sm">{role}</span>
+                                        </label>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     )}
