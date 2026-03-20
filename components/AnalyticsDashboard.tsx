@@ -99,6 +99,8 @@ const FIELD_STAT_OPTIONS = [
     { value: 'accuracy', label: 'Accuracy', icon: Target },
 ]
 
+const STAT_OPTIONS = [...ROBOT_STAT_OPTIONS, ...FIELD_STAT_OPTIONS]
+
 export default function AnalyticsDashboard() {
     const { settings } = useSettings()
     const [stats, setStats] = useState<TeamStat[]>([])
@@ -674,7 +676,7 @@ export default function AnalyticsDashboard() {
                                                 <div className="space-y-1">
                                                     {robotStatFilter.map(filter => (
                                                         <div key={filter} className="flex items-center justify-between text-xs">
-                                                            <span className="text-muted-foreground uppercase tracking-wide">{ROBOT_STAT_OPTIONS.find(o => o.value === filter)?.label}</span>
+                                                            <span className="text-muted-foreground uppercase tracking-wide">{STAT_OPTIONS.find(o => o.value === filter)?.label || filter}</span>
                                                             <span className="font-bold text-primary">{getStatValue(team, filter)}</span>
                                                         </div>
                                                     ))}

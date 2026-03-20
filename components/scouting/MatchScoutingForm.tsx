@@ -33,7 +33,7 @@ function TeamNickname({ teamNumber, onNameFetched }: { teamNumber: string, onNam
                 if (data.nickname && onNameFetched) {
                     onNameFetched(data.nickname)
                 }
-            } catch (e) {
+            } catch {
                 setNickname(null)
             } finally {
                 setLoading(false)
@@ -69,7 +69,7 @@ function TeamNameSearch({ query, eventKey, onSelect }: { query: string, eventKey
                     )
                     .slice(0, 8)
                 setResults(matches)
-            } catch (e) {
+            } catch {
                 setResults([])
             } finally {
                 setLoading(false)
@@ -125,6 +125,46 @@ const STEPS = {
     SUBMIT: 4,
 }
 
+function DefenseAccuracySliders({ formData, handleInputChange }: { formData: any, handleInputChange: (field: string, value: any) => void }) {
+    return (
+        <div className="space-y-3 border border-secondary/10 bg-secondary/5 p-4 rounded-lg text-black">
+            <h4 className="text-sm font-bold text-black">Defense and Accuracy</h4>
+            <div className="space-y-2">
+                <Label className="text-black">Defense Rating</Label>
+                <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={formData.defense_rating}
+                    onChange={(e) => handleInputChange('defense_rating', parseInt(e.target.value))}
+                    className="w-full"
+                />
+                <div className="text-xs text-muted-foreground flex justify-between">
+                    <span>Poor</span>
+                    <span className="font-bold">{formData.defense_rating}%</span>
+                    <span>Excellent</span>
+                </div>
+            </div>
+            <div className="space-y-2">
+                <Label className="text-black">Accuracy Rating</Label>
+                <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={formData.accuracy_rating}
+                    onChange={(e) => handleInputChange('accuracy_rating', parseInt(e.target.value))}
+                    className="w-full"
+                />
+                <div className="text-xs text-muted-foreground flex justify-between">
+                    <span>Poor</span>
+                    <span className="font-bold">{formData.accuracy_rating}%</span>
+                    <span>Excellent</span>
+                </div>
+            </div>
+        </div>
+    )
+}
+
 export default function MatchScoutingForm() {
     const searchParams = useSearchParams()
     const teamParam = searchParams.get('team')
@@ -134,7 +174,85 @@ export default function MatchScoutingForm() {
     const [loading, setLoading] = useState(false)
     const [increment, setIncrement] = useState(1)
     const [validTeams, setValidTeams] = useState<number[]>([])
+    const [teleopPhaseIndex, setTeleopPhaseIndex] = useState(0)
     const supabase = createClient()
+
+    const getTeleopPhaseRole = (index: number) => {
+        const order = formData.teleop_order || 'defense_first'
+        const isEvenPhase = index % 2 === 0
+        if (order === 'defense_first') {
+            return isEvenPhase ? 'Defensive' : 'Offensive'
+        }
+        return isEvenPhase ? 'Offensive' : 'Defensive'
+    }
+
+    const getTeleopPhaseLabel = (index: number) => {
+        return `Phase ${index + 1}: ${getTeleopPhaseRole(index)}`
+    }
+
+    const teleopRangeValue = (range: string) => {
+        switch (range) {
+            case '20-40': return 30
+            case '41-60': return 50
+            case '61-80': return 70
+            case '81-100': return 90
+            default: return 0
+        }
+    }
+
+    const [formData, setFormData] = useState({
+        // Meta
+        match_number: '',
+        team_number: teamParam || (settings.default_team_number ? settings.default_team_number.toString() : ''),
+        team_name: '',
+        event_key: settings.event_key,
+        alliance: '',
+        scout_name: settings.auto_fill_scout_name ? settings.scout_name : '',
+        is_practice_match: false,
+        robot_on_field: true,
+
+        // Auto
+        auto_preloaded: false,
+        auto_active: false,
+        auto_fuel_scored: 0,
+        auto_fuel_pickup_location: 'None',
+        auto_climb: false,
+        auto_climb_location: 'None',
+        start_position: '',
+
+        // Teleop
+        teleop_order: 'defense_first',
+        teleop_phase: 'Phase 1',
+        teleop_phase_1_fuel_scored: 0,
+        teleop_phase_2_fuel_scored: 0,
+        teleop_phase_3_fuel_scored: 0,
+        teleop_phase_4_fuel_scored: 0,
+        teleop_phase_1_fuel_range: '',
+        teleop_phase_2_fuel_range: '',
+        teleop_phase_3_fuel_range: '',
+        teleop_phase_4_fuel_range: '',
+        teleop_fuel_scored: 0,
+        teleop_zone_control: 'Neutral',
+        teleop_descended_from_auto: false,
+        teleop_pickup_locations: [] as string[],    // TODO: Multi-select implementation
+
+        // Endgame
+        defense_rating: 50,
+        accuracy_rating: 50,
+        ranking_points_contributed: 0,
+        ranking_points_sources: [] as string[],
+        robot_status: 'Functional',
+        climb_height: 'None',
+        climb_time_seconds: 0,
+        comments: '',
+    })
+
+    const [alertConfig, setAlertConfig] = useState<{ open: boolean, title: string, message: string, variant?: 'success' | 'confirm' | 'info' }>({
+        open: false,
+        title: '',
+        message: '',
+        variant: 'info',
+    })
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -166,51 +284,39 @@ export default function MatchScoutingForm() {
         setFormData(prev => ({ ...prev, event_key: settings.event_key }))
     }, [settings.event_key])
 
-    // Alert Modal State
-    const [alertConfig, setAlertConfig] = useState<{ open: boolean, title: string, message: string, variant?: 'success' | 'confirm' | 'info' }>({
-        open: false,
-        title: '',
-        message: '',
-        variant: 'info',
-    })
+    // Auto-calc Teleop total fuel from 4 phases
+    useEffect(() => {
+        setFormData(prev => {
+            const total =
+                teleopRangeValue(prev.teleop_phase_1_fuel_range) +
+                teleopRangeValue(prev.teleop_phase_2_fuel_range) +
+                teleopRangeValue(prev.teleop_phase_3_fuel_range) +
+                teleopRangeValue(prev.teleop_phase_4_fuel_range)
+
+            const teleopTotal = Math.min(1000, total)
+            if (prev.teleop_fuel_scored === teleopTotal) {
+                return prev
+            }
+
+            return {
+                ...prev,
+                teleop_fuel_scored: teleopTotal,
+                teleop_phase_1_fuel_scored: teleopRangeValue(prev.teleop_phase_1_fuel_range),
+                teleop_phase_2_fuel_scored: teleopRangeValue(prev.teleop_phase_2_fuel_range),
+                teleop_phase_3_fuel_scored: teleopRangeValue(prev.teleop_phase_3_fuel_range),
+                teleop_phase_4_fuel_scored: teleopRangeValue(prev.teleop_phase_4_fuel_range),
+            }
+        })
+    }, [
+        formData.teleop_phase_1_fuel_range,
+        formData.teleop_phase_2_fuel_range,
+        formData.teleop_phase_3_fuel_range,
+        formData.teleop_phase_4_fuel_range,
+    ])
 
     const showAlert = (title: string, message: string, variant: 'success' | 'confirm' | 'info' = 'info') => {
         setAlertConfig({ open: true, title, message, variant })
     }
-
-    const [formData, setFormData] = useState({
-        // Meta
-        match_number: '',
-        team_number: teamParam || (settings.default_team_number ? settings.default_team_number.toString() : ''),
-        team_name: '',
-        event_key: settings.event_key,
-        alliance: '',
-        scout_name: settings.auto_fill_scout_name ? settings.scout_name : '',
-        is_practice_match: false,
-        robot_on_field: true,
-
-        // Auto
-        auto_preloaded: false,
-        auto_active: false,
-        auto_fuel_scored: 0,
-        auto_fuel_pickup_location: 'None',
-        auto_climb: false,
-        auto_climb_location: 'None',
-        start_position: '',
-
-        // Teleop
-        teleop_fuel_scored: 0,
-        teleop_zone_control: 'Neutral',
-        teleop_descended_from_auto: false,
-        teleop_pickup_locations: [] as string[],    // TODO: Multi-select implementation
-
-        // Endgame
-        defense_rating: 50,
-        accuracy_rating: 50,
-        ranking_points_contributed: 0,
-        robot_status: 'Functional',
-        comments: '',
-    })
 
     // Fetch valid teams for the event
     useEffect(() => {
@@ -268,6 +374,16 @@ export default function MatchScoutingForm() {
                     auto_climb: false,
                     auto_climb_location: 'None',
                     start_position: '',
+                    teleop_order: 'defense_first',
+                    teleop_phase: 'Phase 1',
+                    teleop_phase_1_fuel_scored: 0,
+                    teleop_phase_2_fuel_scored: 0,
+                    teleop_phase_3_fuel_scored: 0,
+                    teleop_phase_4_fuel_scored: 0,
+                    teleop_phase_1_fuel_range: '',
+                    teleop_phase_2_fuel_range: '',
+                    teleop_phase_3_fuel_range: '',
+                    teleop_phase_4_fuel_range: '',
                     teleop_fuel_scored: 0,
                     teleop_zone_control: 'Neutral',
                     teleop_descended_from_auto: false,
@@ -275,7 +391,10 @@ export default function MatchScoutingForm() {
                     defense_rating: 50,
                     accuracy_rating: 50,
                     ranking_points_contributed: 0,
+                    ranking_points_sources: [],
                     robot_status: 'Functional',
+                    climb_height: 'None',
+                    climb_time_seconds: 0,
                     comments: '',
                 })
             }
@@ -360,20 +479,97 @@ export default function MatchScoutingForm() {
             }
         }
         if (step === STEPS.TELEOP) {
-            if (formData.teleop_fuel_scored < 0 || formData.teleop_fuel_scored > 1000) {
-                showAlert('Implausible Value', 'Teleop fuel scored must be between 0 and 1000.');
+            if (!formData.teleop_order) {
+                showAlert('Order Required', 'Please select teleop order in autonomous phase.');
                 return false;
+            }
+
+            const phaseRole = getTeleopPhaseRole(teleopPhaseIndex)
+            if (phaseRole === 'Offensive') {
+                const rangeFieldKey = `teleop_phase_${teleopPhaseIndex + 1}_fuel_range`
+                const rangeValue = (formData as any)[rangeFieldKey] as string
+                if (!rangeValue) {
+                    showAlert('Required Field', `Please choose a fuel range for ${getTeleopPhaseLabel(teleopPhaseIndex)}.`)
+                    return false
+                }
+
+                if (!formData.teleop_zone_control) {
+                    showAlert('Required Field', 'Please select zone control for offensive teleop phase.')
+                    return false
+                }
+
+                const fuelValue = teleopRangeValue(rangeValue)
+                if (fuelValue < 0 || fuelValue > 100) {
+                    showAlert('Implausible Value', `Teleop fuel range selected for ${getTeleopPhaseLabel(teleopPhaseIndex)} is invalid.`)
+                    return false
+                }
+            } else {
+                if (formData.defense_rating < 0 || formData.defense_rating > 100) {
+                    showAlert('Defensive Value', 'Defense rating must be between 0 and 100.')
+                    return false
+                }
+                if (!formData.robot_status) {
+                    showAlert('Required Field', 'Please select robot status for defensive teleop phase.')
+                    return false
+                }
+            }
+
+            if (formData.teleop_fuel_scored > 1000) {
+                showAlert('Implausible Total', 'Total teleop fuel scored across all phases must not exceed 1000.')
+                return false
+            }
+        }
+        if (step === STEPS.ENDGAME) {
+            if (!formData.climb_height || formData.climb_height === 'None') {
+                showAlert('Climb Height Required', 'Please select how high the robot climbed in endgame.')
+                return false
+            }
+            if (formData.climb_time_seconds <= 0 || formData.climb_time_seconds > 120) {
+                showAlert('Climb Time Required', 'Please enter a valid climb time between 1 and 120 seconds.')
+                return false
+            }
+            if (formData.ranking_points_contributed < 0 || formData.ranking_points_contributed > 10) {
+                showAlert('Ranking Points Required', 'Please enter ranking points from 0 to 10.')
+                return false
+            }
+            if (formData.ranking_points_contributed > 0 && (!formData.ranking_points_sources || formData.ranking_points_sources.length === 0)) {
+                showAlert('Ranking Points Sources Required', 'Please select which ranking points were earned.')
+                return false
             }
         }
         return true;
     };
 
     const nextStep = () => {
-        if (validateStep()) {
-            setStep((prev) => Math.min(prev + 1, STEPS.SUBMIT));
+        if (step === STEPS.TELEOP) {
+            if (!validateStep()) return
+            if (teleopPhaseIndex < 3) {
+                setTeleopPhaseIndex((prev) => prev + 1) 
+            } else {
+                setStep(STEPS.ENDGAME)
+            }
+            return
+        }
+
+        if (!validateStep()) return
+
+        setStep((prev) => Math.min(prev + 1, STEPS.SUBMIT))
+        if (step === STEPS.AUTO) {
+            setTeleopPhaseIndex(0)
         }
     }
-    const prevStep = () => setStep((prev) => Math.max(prev - 1, STEPS.PREMATCH))
+
+    const prevStep = () => {
+        if (step === STEPS.TELEOP) {
+            if (teleopPhaseIndex > 0) {
+                setTeleopPhaseIndex((prev) => prev - 1)
+            } else {
+                setStep(STEPS.AUTO)
+            }
+            return
+        }
+        setStep((prev) => Math.max(prev - 1, STEPS.PREMATCH))
+    }
 
     const filteredTeams = validTeams
         .filter(num => num.toString().startsWith(formData.team_number))
@@ -386,10 +582,10 @@ export default function MatchScoutingForm() {
                     <CardTitle>Match Scouting</CardTitle>
                     <CardDescription>Step {step + 1} of 4</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-6">
 
                     {step === STEPS.PREMATCH && (
-                        <div className="space-y-4 animate-in slide-in-from-right-8 fade-in-0 duration-300">
+                        <div className="space-y-6 animate-in slide-in-from-right-8 fade-in-0 duration-300">
                             <h3 className="text-lg font-semibold">Pre-Match Info</h3>
 
                             <div className="space-y-4 bg-muted/20 p-4 rounded-2xl border border-dashed">
@@ -405,7 +601,7 @@ export default function MatchScoutingForm() {
                                 </div>
                             </div>
 
-                            <div className="md:grid md:grid-cols-2 md:gap-4 space-y-4 md:space-y-0 pt-2">
+                            <div className="md:grid md:grid-cols-2 md:gap-6 space-y-4 md:space-y-0 pt-2">
                                 <div className="space-y-2">
                                     <Label htmlFor="match_number">Match #</Label>
                                     <Input
@@ -543,11 +739,14 @@ export default function MatchScoutingForm() {
                                     Robot on Field?
                                 </Label>
                             </div>
+
+                            <DefenseAccuracySliders formData={formData} handleInputChange={handleInputChange} />
+
                         </div>
                     )}
 
                     {step === STEPS.AUTO && (
-                        <div className="space-y-4 animate-in slide-in-from-right-8 fade-in-0 duration-300">
+                        <div className="space-y-6 animate-in slide-in-from-right-8 fade-in-0 duration-300">
                             <h3 className="text-lg font-semibold text-purple-600">Autonomous Phase</h3>
 
                             <div className="md:grid md:grid-cols-2 md:gap-4 space-y-4 md:space-y-0">
@@ -606,6 +805,19 @@ export default function MatchScoutingForm() {
                                 </div>
 
                                 <div className="space-y-2">
+                                    <Label>Teleop Order</Label>
+                                    <Select onValueChange={(val) => handleInputChange('teleop_order', val || 'defense_first')} value={formData.teleop_order || 'defense_first'}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select Teleop Order" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="defense_first">Defense → Offense → Defense → Offense</SelectItem>
+                                            <SelectItem value="offense_first">Offense → Defense → Offense → Defense</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
                                     <Label>Start Position - Click on the field to select</Label>
                                     <div className="relative w-full">
                                         <div className="relative rounded-xl overflow-hidden border-2">
@@ -656,73 +868,121 @@ export default function MatchScoutingForm() {
                                     </Button>
                                 </div>
                             </div>
+
+                            <DefenseAccuracySliders formData={formData} handleInputChange={handleInputChange} />
                         </div>
                     )}
 
                     {step === STEPS.TELEOP && (
-                        <div className="space-y-4 animate-in slide-in-from-right-8 fade-in-0 duration-300">
+                        <div className="space-y-6 animate-in slide-in-from-right-8 fade-in-0 duration-300">
                             <h3 className="text-lg font-semibold text-orange-600">Teleop Phase</h3>
 
-                            <div className="flex items-center justify-between bg-muted/30 p-2 rounded-lg text-orange-600">
-                                <Label className="text-xs uppercase font-bold opacity-70 tracking-wider">Increment Step</Label>
-                                <div className="flex bg-background rounded-md p-1 border border-orange-200">
-                                    {[1, 5, 10].map(val => (
-                                        <button
-                                            key={val}
-                                            type="button"
-                                            onClick={() => setIncrement(val)}
-                                            className={`px-3 py-1 text-xs font-bold rounded ${increment === val ? 'bg-orange-600 text-white' : 'hover:bg-orange-50'}`}
-                                        >
-                                            +{val}
-                                        </button>
-                                    ))}
+                            <div className="bg-muted/20 p-3 rounded-lg border border-orange-200">
+                                <div className="flex items-center justify-between mb-2">
+                                    <p className="text-sm font-bold">Current Phase</p>
+                                    <p className="text-xs text-muted-foreground">{getTeleopPhaseLabel(teleopPhaseIndex)}</p>
                                 </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Teleop order: {formData.teleop_order === 'offense_first' ? 'Offense first' : 'Defense first'}.
+                                    Press Next in the footer to step through all 4 teleop phases in alternating order.
+                                </p>
                             </div>
 
-                            <div className="md:grid md:grid-cols-2 md:gap-4 space-y-4 md:space-y-0">
-                                <div className="space-y-2">
-                                    <Label>Fuel Scored (Estimate)</Label>
-                                    <div className="flex items-center gap-2">
-                                        <Button variant="outline" size="icon" className="shrink-0" onClick={() => handleInputChange('teleop_fuel_scored', Math.max(0, formData.teleop_fuel_scored - increment))}>-</Button>
-                                        <Input
-                                            type="number"
-                                            className="text-center font-bold text-lg"
-                                            min="0"
-                                            max="1000"
-                                            value={formData.teleop_fuel_scored}
-                                            onChange={(e) => handleInputChange('teleop_fuel_scored', Math.min(1000, Math.max(0, parseInt(e.target.value) || 0)))}
-                                        />
-                                        <Button variant="outline" size="icon" className="shrink-0" onClick={() => handleInputChange('teleop_fuel_scored', Math.min(1000, formData.teleop_fuel_scored + increment))}>+</Button>
+                            <div className="border-l-4 border-orange-400 bg-transparent p-3 rounded-lg text-white">
+                                <h4 className="text-sm font-bold text-white">2026 Teleop Segment</h4>
+                                <p className="text-xs text-white mb-2">This panel is either defensive (no scoring) or offensive (scoring) based on the phase sequence.</p>
+
+                                {getTeleopPhaseRole(teleopPhaseIndex) === 'Defensive' ? (
+                                    <div className="space-y-4 text-white">
+                                        <div className="space-y-2">
+                                            <Label className="text-white">Defensive Rating</Label>
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="100"
+                                                value={formData.defense_rating}
+                                                onChange={(e) => handleInputChange('defense_rating', parseInt(e.target.value))}
+                                                className="w-full"
+                                            />
+                                            <div className="flex justify-between text-xs text-muted-foreground">
+                                                <span>Poor</span>
+                                                <span className="font-bold">{formData.defense_rating}%</span>
+                                                <span>Excellent</span>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-white">Robot Status</Label>
+                                            <Select onValueChange={(val) => handleInputChange('robot_status', val || '')} value={formData.robot_status || ''}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Status" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="Functional">Functional</SelectItem>
+                                                    <SelectItem value="Partially Functional">Partially Functional</SelectItem>
+                                                    <SelectItem value="Broken">Broken</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
                                     </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label>Zone Control</Label>
-                                    <Select onValueChange={(val) => handleInputChange('teleop_zone_control', val || '')} value={formData.teleop_zone_control || ''}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select Zone" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Alliance">Alliance</SelectItem>
-                                            <SelectItem value="Neutral">Neutral</SelectItem>
-                                            <SelectItem value="Opposing">Opposing</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-white">{`Phase ${teleopPhaseIndex + 1} Fuel Range`}</Label>
+                                            <Select
+                                                value={(formData as any)[`teleop_phase_${teleopPhaseIndex + 1}_fuel_range`] || ''}
+                                                onValueChange={(val) => handleInputChange(`teleop_phase_${teleopPhaseIndex + 1}_fuel_range`, val || '')}
+                                            >
+                                                <SelectTrigger className="text-white">
+                                                    <SelectValue placeholder="Select range" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="20-40">20-40</SelectItem>
+                                                    <SelectItem value="41-60">41-60</SelectItem>
+                                                    <SelectItem value="61-80">61-80</SelectItem>
+                                                    <SelectItem value="81-100">81-100</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-white">Zone Control (offense)</Label>
+                                            <Select onValueChange={(val) => handleInputChange('teleop_zone_control', val || '')} value={formData.teleop_zone_control || ''}>
+                                                <SelectTrigger className="text-white">
+                                                    <SelectValue placeholder="Select Zone" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="Alliance">Alliance</SelectItem>
+                                                    <SelectItem value="Neutral">Neutral</SelectItem>
+                                                    <SelectItem value="Opposing">Opposing</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-white">Offensive Accuracy</Label>
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="100"
+                                                value={formData.accuracy_rating}
+                                                onChange={(e) => handleInputChange('accuracy_rating', parseInt(e.target.value))}
+                                                className="w-full"
+                                            />
+                                            <div className="flex justify-between text-xs text-white">
+                                                <span>Poor</span>
+                                                <span className="font-bold">{formData.accuracy_rating}%</span>
+                                                <span>Excellent</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
-                            <div className="flex items-center justify-between border p-3 rounded-lg">
-                                <Label>Descended from Auto?</Label>
-                                <input
-                                    type="checkbox"
-                                    checked={formData.teleop_descended_from_auto}
-                                    onChange={(e) => handleInputChange('teleop_descended_from_auto', e.target.checked)}
-                                    className="h-5 w-5"
-                                />
+                            <div className="mt-2 space-y-2">
+                                <Label className="text-white">Total Teleop Fuel (auto-sum)</Label>
+                                <Input type="number" className="text-center font-bold text-lg" value={formData.teleop_fuel_scored} readOnly />
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Pickup Locations</Label>
+                                <Label className="text-white">Pickup Locations</Label>
                                 <div className="flex flex-wrap gap-2">
                                     {['Floor', 'Depot', 'Outpost'].map((loc) => (
                                         <Button
@@ -747,42 +1007,78 @@ export default function MatchScoutingForm() {
                     )}
 
                     {step === STEPS.ENDGAME && (
-                        <div className="space-y-4 animate-in slide-in-from-right-8 fade-in-0 duration-300">
+                        <div className="space-y-6 animate-in slide-in-from-right-8 fade-in-0 duration-300">
                             <h3 className="text-lg font-semibold text-green-600">Endgame & Post-Match</h3>
 
-                            <div className="md:grid md:grid-cols-2 md:gap-4 space-y-4 md:space-y-0">
-                                <div className="space-y-2">
-                                    <Label>Defense Rating</Label>
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="100"
-                                        value={formData.defense_rating}
-                                        onChange={(e) => handleInputChange('defense_rating', parseInt(e.target.value))}
-                                        className="w-full"
-                                    />
-                                    <div className="flex justify-between text-xs text-muted-foreground">
-                                        <span>Poor</span>
-                                        <span className="font-bold text-primary">{formData.defense_rating}%</span>
-                                        <span>Excellent</span>
-                                    </div>
-                                </div>
+                            <DefenseAccuracySliders formData={formData} handleInputChange={handleInputChange} />
 
-                                <div className="space-y-2">
-                                    <Label>Accuracy Rating</Label>
-                                    <input
-                                        type="range"
+                            <div className="space-y-2">
+                                <Label>Climb Height</Label>
+                                <Select onValueChange={(val) => handleInputChange('climb_height', val || 'None')} value={formData.climb_height || 'None'}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select height" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="None">None</SelectItem>
+                                        <SelectItem value="Level 1">Level 1</SelectItem>
+                                        <SelectItem value="Level 2">Level 2</SelectItem>
+                                        <SelectItem value="Level 3">Level 3</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Climb Time (sec)</Label>
+                                <div className="flex items-center gap-2">
+                                    <Button variant="outline" size="icon" className="shrink-0" onClick={() => handleInputChange('climb_time_seconds', Math.max(0, formData.climb_time_seconds - 1))}>-</Button>
+                                    <Input
+                                        type="number"
+                                        className="text-center font-bold text-lg"
                                         min="0"
-                                        max="100"
-                                        value={formData.accuracy_rating}
-                                        onChange={(e) => handleInputChange('accuracy_rating', parseInt(e.target.value))}
-                                        className="w-full"
+                                        max="120"
+                                        value={formData.climb_time_seconds}
+                                        onChange={(e) => handleInputChange('climb_time_seconds', Math.min(120, Math.max(0, parseInt(e.target.value) || 0)))}
                                     />
-                                    <div className="flex justify-between text-xs text-muted-foreground">
-                                        <span>Poor</span>
-                                        <span className="font-bold text-primary">{formData.accuracy_rating}%</span>
-                                        <span>Excellent</span>
-                                    </div>
+                                    <Button variant="outline" size="icon" className="shrink-0" onClick={() => handleInputChange('climb_time_seconds', Math.min(120, formData.climb_time_seconds + 1))}>+</Button>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Ranking Points Contributed</Label>
+                                <div className="flex items-center gap-2">
+                                    <Button variant="outline" size="icon" className="shrink-0" onClick={() => handleInputChange('ranking_points_contributed', Math.max(0, formData.ranking_points_contributed - 1))}>-</Button>
+                                    <Input
+                                        type="number"
+                                        className="text-center font-bold text-lg"
+                                        min="0"
+                                        max="10"
+                                        value={formData.ranking_points_contributed}
+                                        onChange={(e) => handleInputChange('ranking_points_contributed', Math.min(10, Math.max(0, parseInt(e.target.value) || 0)))}
+                                    />
+                                    <Button variant="outline" size="icon" className="shrink-0" onClick={() => handleInputChange('ranking_points_contributed', Math.min(10, formData.ranking_points_contributed + 1))}>+</Button>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Ranking Points Earned</Label>
+                                <div className="flex flex-wrap gap-2">
+                                    {['Win RP', 'Tie RP', 'Auto RP', 'Endgame RP', 'Supercharged RP'].map((rp) => (
+                                        <Button
+                                            key={rp}
+                                            type="button"
+                                            variant={formData.ranking_points_sources.includes(rp) ? 'default' : 'outline'}
+                                            size="sm"
+                                            onClick={() => {
+                                                const current = formData.ranking_points_sources as string[]
+                                                const changed = current.includes(rp)
+                                                    ? current.filter((s) => s !== rp)
+                                                    : [...current, rp]
+                                                handleInputChange('ranking_points_sources', changed)
+                                            }}
+                                        >
+                                            {rp}
+                                        </Button>
+                                    ))}
                                 </div>
                             </div>
 

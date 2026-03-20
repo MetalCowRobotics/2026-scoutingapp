@@ -140,6 +140,35 @@ function LoginForm() {
                                 className="h-11 border-2"
                             />
                         </div>
+                        {/* forgot password link */}
+                        {!isSignUp && (
+                            <div className="text-right">
+                                <Button
+                                    variant="link"
+                                    type="button"
+                                    size="sm"
+                                    onClick={async () => {
+                                        if (!email) {
+                                            showAlert('Reset Error', 'Please enter your email above');
+                                            return;
+                                        }
+                                        setLoading(true);
+                                        try {
+                                            const { error } = await supabase.auth.resetPasswordForEmail(email);
+                                            if (error) throw error;
+                                            showAlert('Email Sent', 'Check your inbox for a password reset link', 'success');
+                                        } catch (err: unknown) {
+                                            const message = err instanceof Error ? err.message : 'Unknown error';
+                                            showAlert('Reset Error', message);
+                                        } finally {
+                                            setLoading(false);
+                                        }
+                                    }}
+                                >
+                                    Forgot password?
+                                </Button>
+                            </div>
+                        )}
                     </CardContent>
                     <CardFooter className="flex flex-col space-y-2 pt-4">
                         <Button className="w-full h-11 font-bold text-lg" type="submit" disabled={loading}>
@@ -167,6 +196,7 @@ function LoginForm() {
                 variant={alertConfig.variant}
             />
         </div>
+
     )
 }
 
