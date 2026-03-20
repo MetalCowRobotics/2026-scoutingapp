@@ -93,6 +93,7 @@ interface TeamStat {
     match_is_practice_match?: boolean
     match_robot_on_field?: boolean
     match_alliance?: string
+    match_start_position?: string
 
     // Calculated
     avg_score?: number
@@ -283,7 +284,10 @@ export default function AnalyticsDashboard() {
                 const finalized: TeamStat[] = Array.from(teamMap.values()).map(t => ({
                     ...t,
                     avg_score: t.match_count ? (t.avg_score || 0) / t.match_count : 0,
-                    climb_success_rate: t.match_count ? ((t.can_climb ? 80 : 20)) : 0,
+                    // climb_success_rate: percentage of matches where robot climbed (climb_height != None/null)
+                    climb_success_rate: t.match_count
+                        ? (t.match_climb_height && t.match_climb_height !== 'None' ? 100 : 0)
+                        : 0,
                 }))
 
                 setStats(finalized)
@@ -454,10 +458,11 @@ export default function AnalyticsDashboard() {
     }, [filteredStats])
 
     const climbData = useMemo(() => {
-        const canClimb = filteredStats.filter(t => t.can_climb).length
-        const cannotClimb = filteredStats.filter(t => !t.can_climb).length
-        const traversal = filteredStats.filter(t => t.traversal).length
-        const superCharged = filteredStats.filter(t => t.super_charged).length
+        // Use pit_climb_level: level >= 1 means can climb; level >= 2 is traversal-capable
+        const canClimb = filteredStats.filter(t => t.pit_climb_level && t.pit_climb_level >= 1).length
+        const cannotClimb = filteredStats.filter(t => !t.pit_climb_level || t.pit_climb_level < 1).length
+        const traversal = filteredStats.filter(t => t.pit_climb_level && t.pit_climb_level >= 2).length
+        const superCharged = filteredStats.filter(t => t.pit_super_charged).length
         return [
             { name: 'Can Climb', value: canClimb, color: '#A4D65E' },
             { name: 'Cannot Climb', value: cannotClimb, color: '#5C5C5C' },
@@ -469,7 +474,8 @@ export default function AnalyticsDashboard() {
     const driveTrainData = useMemo(() => {
         const counts: Record<string, number> = {}
         filteredStats.forEach(t => {
-            const dt = t.drive_train_type || 'Unknown'
+            // Use pit_drive_train_type which is correctly mapped from pit scouting data
+            const dt = t.pit_drive_train_type || 'Unknown'
             counts[dt] = (counts[dt] || 0) + 1
         })
         return Object.entries(counts).map(([name, value]) => ({ name, value }))
@@ -485,10 +491,10 @@ export default function AnalyticsDashboard() {
     const radarData = useMemo(() => {
         return [
             { stat: 'Avg Score', value: Math.round(filteredStats.reduce((sum, t) => sum + (t.avg_score || 0), 0) / filteredStats.length) || 0 },
-            { stat: 'Climb Rate', value: Math.round(filteredStats.reduce((sum, t) => sum + (t.can_climb ? 100 : 0), 0) / filteredStats.length) || 0 },
+            { stat: 'Climb Rate', value: Math.round(filteredStats.reduce((sum, t) => sum + (t.pit_climb_level ? 100 : 0), 0) / filteredStats.length) || 0 },
             { stat: 'Defense', value: Math.round(filteredStats.reduce((sum, t) => sum + (t.defense_rating || 0), 0) / filteredStats.length) || 0 },
             { stat: 'Accuracy', value: Math.round(filteredStats.reduce((sum, t) => sum + (t.accuracy || 0), 0) / filteredStats.length) || 0 },
-            { stat: 'Weight Avg', value: Math.round(filteredStats.reduce((sum, t) => sum + (t.robot_weight || 0), 0) / filteredStats.length) || 0 },
+            { stat: 'Weight Avg', value: Math.round(filteredStats.reduce((sum, t) => sum + (t.pit_robot_weight || 0), 0) / filteredStats.length) || 0 },
         ]
     }, [filteredStats])
 
@@ -507,19 +513,19 @@ export default function AnalyticsDashboard() {
                 case 'match_climb_time_seconds': return team.match_climb_time_seconds ? `${team.match_climb_time_seconds}s` : 'N/A'
                 case 'match_ranking_points_contributed': return team.match_ranking_points_contributed != null ? `${team.match_ranking_points_contributed}` : 'N/A'
                 case 'match_comments': return team.match_comments || team.pit_notes || 'N/A'
-            case 'weight': return team.robot_weight ? `${team.robot_weight} lb` : 'N/A'
-            case 'auto': return team.auto_abilities || 'N/A'
-            case 'start_pos': return team.start_position || 'N/A'
-            case 'can_climb': return team.can_climb ? 'Yes' : 'No'
-            case 'can_descend': return team.can_descend ? 'Yes' : 'No'
-            case 'collection_speed': return team.collection_speed || 'N/A'
-            case 'shoot_speed': return team.shoot_speed || 'N/A'
-            case 'drive_train': return team.drive_train_type || 'N/A'
-            case 'movement': return team.movement_abilities || 'N/A'
-            case 'scoring_speed': return team.scoring_speed || 'N/A'
-            case 'ranking_points': return team.ranking_points || 'N/A'
-            case 'traversal': return team.traversal ? 'Yes' : 'No'
-            case 'super_charged': return team.super_charged ? 'Yes' : 'No'
+            case 'weight': return team.pit_robot_weight ? `${team.pit_robot_weight} lb` : 'N/A'
+            case 'auto': return team.pit_auto_abilities || 'N/A'
+            case 'start_pos': return team.pit_start_position || team.match_start_position || 'N/A'
+            case 'can_climb': return team.pit_can_climb ? 'Yes' : (team.pit_climb_level ? 'Yes' : 'No')
+            case 'can_descend': return team.pit_can_descend ? 'Yes' : 'No'
+            case 'collection_speed': return team.pit_collection_speed || 'N/A'
+            case 'shoot_speed': return team.pit_shoot_speed || 'N/A'
+            case 'drive_train': return team.pit_drive_train_type || 'N/A'
+            case 'movement': return team.pit_movement_abilities || 'N/A'
+            case 'scoring_speed': return team.pit_scoring_speed || 'N/A'
+            case 'ranking_points': return team.pit_ranking_points || 'N/A'
+            case 'traversal': return team.pit_traversal ? 'Yes' : (team.pit_climb_level && team.pit_climb_level >= 2 ? 'Yes' : 'No')
+            case 'super_charged': return team.pit_super_charged ? 'Yes' : 'No'
             case 'team_number': return `#${team.team_number}`
             case 'scout_name': return team.scout_name || 'N/A'
             case 'accuracy': return team.accuracy ? `${team.accuracy}%` : 'N/A'
@@ -547,19 +553,19 @@ export default function AnalyticsDashboard() {
                 case 'match_climb_time_seconds': return team.match_climb_time_seconds != null ? `${team.match_climb_time_seconds}s` : '-'
                 case 'match_ranking_points_contributed': return team.match_ranking_points_contributed != null ? `${team.match_ranking_points_contributed}` : '-'
                 case 'match_comments': return team.match_comments || team.pit_notes || '-'
-            case 'weight': return team.robot_weight ? `${team.robot_weight} lb` : '-'
-            case 'auto': return team.auto_abilities || '-'
-            case 'start_pos': return team.start_position || '-'
-            case 'can_climb': return team.can_climb ? <Badge className="bg-primary/20 text-primary">Yes</Badge> : <span className="text-muted-foreground">No</span>
-            case 'can_descend': return team.can_descend ? <Badge className="bg-primary/20 text-primary">Yes</Badge> : <span className="text-muted-foreground">No</span>
-            case 'collection_speed': return team.collection_speed || '-'
-            case 'shoot_speed': return team.shoot_speed || '-'
-            case 'drive_train': return <span className="text-xs">{team.drive_train_type || '-'}</span>
-            case 'movement': return team.movement_abilities || '-'
-            case 'scoring_speed': return team.scoring_speed || '-'
-            case 'ranking_points': return team.ranking_points || '-'
-            case 'traversal': return team.traversal ? <Badge className="bg-blue-500/20 text-blue-600">Yes</Badge> : <span className="text-muted-foreground">-</span>
-            case 'super_charged': return team.super_charged ? <Badge className="bg-green-500/20 text-green-600">Yes</Badge> : <span className="text-muted-foreground">-</span>
+            case 'weight': return team.pit_robot_weight ? `${team.pit_robot_weight} lb` : '-'
+            case 'auto': return team.pit_auto_abilities || '-'
+            case 'start_pos': return team.pit_start_position || team.match_start_position || '-'
+            case 'can_climb': return (team.pit_can_climb || !!team.pit_climb_level) ? <Badge className="bg-primary/20 text-primary">Yes</Badge> : <span className="text-muted-foreground">No</span>
+            case 'can_descend': return team.pit_can_descend ? <Badge className="bg-primary/20 text-primary">Yes</Badge> : <span className="text-muted-foreground">No</span>
+            case 'collection_speed': return team.pit_collection_speed || '-'
+            case 'shoot_speed': return team.pit_shoot_speed || '-'
+            case 'drive_train': return <span className="text-xs">{team.pit_drive_train_type || '-'}</span>
+            case 'movement': return team.pit_movement_abilities || '-'
+            case 'scoring_speed': return team.pit_scoring_speed || '-'
+            case 'ranking_points': return team.pit_ranking_points || '-'
+            case 'traversal': return (team.pit_traversal || (team.pit_climb_level && team.pit_climb_level >= 2)) ? <Badge className="bg-blue-500/20 text-blue-600">Yes</Badge> : <span className="text-muted-foreground">-</span>
+            case 'super_charged': return team.pit_super_charged ? <Badge className="bg-green-500/20 text-green-600">Yes</Badge> : <span className="text-muted-foreground">-</span>
             case 'accuracy': return team.accuracy ? `${team.accuracy}%` : '-'
             case 'match_number': return team.match_number ? `#${team.match_number}` : '-'
             case 'robot_status': return team.robot_status ? <Badge variant={team.robot_status === 'Functional' ? 'default' : 'destructive'}>{team.robot_status}</Badge> : '-'
@@ -580,6 +586,20 @@ export default function AnalyticsDashboard() {
         <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
             <Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" />
             <div className="text-muted-foreground font-medium animate-pulse">Loading analytics...</div>
+        </div>
+    )
+
+    if (!loading && stats.length === 0) return (
+        <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4 text-center">
+            <BarChart3 className="h-16 w-16 text-muted-foreground/20" />
+            <div>
+                <p className="text-lg font-bold text-muted-foreground">No scouting data yet</p>
+                <p className="text-sm text-muted-foreground/60 mt-1">Submit match or pit data for <span className="font-mono font-bold">{eventKey}</span> to see analytics.</p>
+            </div>
+            <div className="flex gap-3">
+                <a href="/scout/match" className="text-sm font-bold text-primary hover:underline">→ Scout a Match</a>
+                <a href="/scout/pit" className="text-sm font-bold text-primary hover:underline">→ Scout a Pit</a>
+            </div>
         </div>
     )
 
@@ -693,9 +713,9 @@ export default function AnalyticsDashboard() {
                                                 <span className="font-bold">{team.team_number}</span>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                {team.can_climb && <Badge className="text-[10px] bg-primary/20 text-primary">Climb</Badge>}
-                                                {team.traversal && <Badge className="text-[10px] bg-blue-500/20 text-blue-600">Traversal</Badge>}
-                                                {team.super_charged && <Badge className="text-[10px] bg-green-500/20 text-green-600">Super</Badge>}
+                                                {(team.pit_can_climb || !!team.pit_climb_level) && <Badge className="text-[10px] bg-primary/20 text-primary">Climb</Badge>}
+                                                {(team.pit_traversal || (team.pit_climb_level && team.pit_climb_level >= 2)) && <Badge className="text-[10px] bg-blue-500/20 text-blue-600">Traversal</Badge>}
+                                                {team.pit_super_charged && <Badge className="text-[10px] bg-green-500/20 text-green-600">Super</Badge>}
                                             </div>
                                         </div>
                                     </Link>
@@ -934,9 +954,9 @@ export default function AnalyticsDashboard() {
                                 <TableBody>
                                     {filteredStats
                                         .filter(t => {
-                                            if (climbFilter === 'can_climb') return t.can_climb
-                                            if (climbFilter === 'traversal') return t.traversal
-                                            if (climbFilter === 'super_charged') return t.super_charged
+                                            if (climbFilter === 'can_climb') return t.pit_can_climb
+                                            if (climbFilter === 'traversal') return t.pit_traversal
+                                            if (climbFilter === 'super_charged') return t.pit_super_charged
                                             return true
                                         })
                                         .slice(0, 20)

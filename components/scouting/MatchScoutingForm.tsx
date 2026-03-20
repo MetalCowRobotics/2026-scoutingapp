@@ -342,14 +342,57 @@ export default function MatchScoutingForm() {
     const handleSubmit = async () => {
         setLoading(true)
         try {
-            const { error } = await supabase.from('match_scouting').insert([
-                {
-                    ...formData, // Spread the form data
-                    match_number: parseInt(formData.match_number),
-                    team_number: parseInt(formData.team_number),
-                    // Ensure other fields are parsed if necessary or matches schema types
-                },
-            ])
+            // Build an explicit payload that maps only to valid match_scouting DB columns.
+            // Using upsert so re-submitting the same match/team/scout updates the row instead of erroring.
+            const payload = {
+                match_number: parseInt(formData.match_number),
+                team_number: parseInt(formData.team_number),
+                event_key: formData.event_key,
+                alliance: formData.alliance || null,
+                scout_name: formData.scout_name,
+                team_name: formData.team_name || null,
+                is_practice_match: formData.is_practice_match,
+                robot_on_field: formData.robot_on_field,
+
+                // Autonomous
+                start_position: formData.start_position || null,
+                auto_preloaded: formData.auto_preloaded,
+                auto_active: formData.auto_active,
+                auto_fuel_scored: formData.auto_fuel_scored,
+                auto_fuel_pickup_location: formData.auto_fuel_pickup_location,
+                auto_climb: formData.auto_climb,
+                auto_climb_location: formData.auto_climb_location,
+
+                // Teleop
+                teleop_fuel_scored: formData.teleop_fuel_scored,
+                teleop_zone_control: formData.teleop_zone_control,
+                teleop_descended_from_auto: formData.teleop_descended_from_auto,
+                teleop_pickup_locations: formData.teleop_pickup_locations,
+                teleop_order: formData.teleop_order || null,
+                teleop_phase: formData.teleop_phase || null,
+                teleop_phase_1_fuel_scored: formData.teleop_phase_1_fuel_scored,
+                teleop_phase_2_fuel_scored: formData.teleop_phase_2_fuel_scored,
+                teleop_phase_3_fuel_scored: formData.teleop_phase_3_fuel_scored,
+                teleop_phase_4_fuel_scored: formData.teleop_phase_4_fuel_scored,
+                teleop_phase_1_fuel_range: formData.teleop_phase_1_fuel_range || null,
+                teleop_phase_2_fuel_range: formData.teleop_phase_2_fuel_range || null,
+                teleop_phase_3_fuel_range: formData.teleop_phase_3_fuel_range || null,
+                teleop_phase_4_fuel_range: formData.teleop_phase_4_fuel_range || null,
+
+                // Endgame
+                defense_rating: formData.defense_rating,
+                accuracy_rating: formData.accuracy_rating,
+                ranking_points_contributed: formData.ranking_points_contributed,
+                ranking_points_sources: formData.ranking_points_sources,
+                robot_status: formData.robot_status,
+                climb_height: formData.climb_height || null,
+                climb_time_seconds: formData.climb_time_seconds || null,
+                comments: formData.comments || null,
+            }
+
+            const { error } = await supabase
+                .from('match_scouting')
+                .upsert([payload], { onConflict: 'team_number,event_key,match_number,scout_name' })
 
             if (error) {
                 console.error('Error submitting match data:', error)

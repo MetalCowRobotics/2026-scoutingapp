@@ -276,27 +276,29 @@ export default function PitScoutingForm() {
     const handleSubmit = async () => {
         setLoading(true)
         try {
-            const { error } = await supabase.from('pit_scouting').insert([
-                {
-                    team_number: parseInt(formData.team_number),
-                    team_name: formData.team_name,
-                    event_key: formData.event_key,
-                    robot_weight: formData.weight,
-                    fuel_capacity: formData.fuel_capacity,
-                    top_speed: formData.top_speed,
-                    fuel_per_second: formData.fuel_per_second,
-                    primary_role: (formData.primary_roles || [formData.primary_role || '']).join(', '),
-                    climb_level: parseInt(formData.climb_level),
-                    climbs_in_auto: formData.climbs_in_auto,
-                    obstacle_handling: formData.obstacle_handling,
-                    drive_train_type: formData.drive_train,
-                    confidence_drive: formData.confidence_drive,
-                    confidence_shooter: formData.confidence_shooter,
-                    confidence_overall: formData.confidence_overall,
-                    scout_name: formData.scout_name,
-                    comments: formData.notes,
-                },
-            ])
+            const { error } = await supabase
+                .from('pit_scouting')
+                .upsert([
+                    {
+                        team_number: parseInt(formData.team_number),
+                        team_name: formData.team_name || null,
+                        event_key: formData.event_key,
+                        robot_weight: formData.weight,
+                        fuel_capacity: formData.fuel_capacity,
+                        top_speed: formData.top_speed,
+                        fuel_per_second: formData.fuel_per_second,
+                        primary_role: (formData.primary_roles || [formData.primary_role || '']).join(', '),
+                        climb_level: parseInt(formData.climb_level),
+                        climbs_in_auto: formData.climbs_in_auto,
+                        obstacle_handling: formData.obstacle_handling,
+                        drive_train_type: formData.drive_train,
+                        confidence_drive: formData.confidence_drive,
+                        confidence_shooter: formData.confidence_shooter,
+                        confidence_overall: formData.confidence_overall,
+                        scout_name: formData.scout_name,
+                        comments: formData.notes || null,
+                    },
+                ], { onConflict: 'team_number,event_key' })
 
             if (error) {
                 console.error('Error submitting pit data:', error)
