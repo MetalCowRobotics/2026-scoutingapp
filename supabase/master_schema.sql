@@ -157,7 +157,7 @@ CREATE TABLE IF NOT EXISTS public.pit_scouting (
     climb_level INTEGER CHECK (climb_level IN (1, 2, 3)),
     climbs_in_auto BOOLEAN DEFAULT FALSE,
     obstacle_handling TEXT CHECK (obstacle_handling IN ('Trench', 'Bump', 'Both', 'None')),
-    primary_role TEXT CHECK (primary_role IN ('Offense', 'Defense')),
+    primary_role TEXT,
     
     -- Confidence Ratings (0-100)
     confidence_drive INTEGER CHECK (confidence_drive >= 0 AND confidence_drive <= 100),
