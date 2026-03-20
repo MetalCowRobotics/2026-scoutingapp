@@ -128,7 +128,7 @@ const STEPS = {
 function DefenseAccuracySliders({ formData, handleInputChange }: { formData: any, handleInputChange: (field: string, value: any) => void }) {
     return (
         <div className="space-y-3 border border-secondary/10 bg-secondary/5 p-4 rounded-lg text-black">
-            <h4 className="text-sm font-bold text-black">Defense and Accuracy</h4>
+            <h4 className="text-sm font-bold text-white">Defense and Accuracy</h4>
             <div className="space-y-2">
                 <Label className="text-black">Defense Rating</Label>
                 <input
@@ -586,10 +586,10 @@ export default function MatchScoutingForm() {
 
                     {step === STEPS.PREMATCH && (
                         <div className="space-y-6 animate-in slide-in-from-right-8 fade-in-0 duration-300">
-                            <h3 className="text-lg font-semibold">Pre-Match Info</h3>
+                            <h3 className="text-lg font-semibold text-white">Pre-Match Info</h3>
 
                             <div className="space-y-4 bg-muted/20 p-4 rounded-2xl border border-dashed">
-                                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Competition Setup</h4>
+                                <h4 className="text-xs font-bold text-white uppercase tracking-widest">Competition Setup</h4>
                                 <div className="flex items-center justify-between p-3 rounded-xl bg-primary/5 border border-primary/20">
                                     <div>
                                         <div className="text-[10px] uppercase font-bold text-primary tracking-widest leading-none mb-1">Active Competition</div>
@@ -747,7 +747,7 @@ export default function MatchScoutingForm() {
 
                     {step === STEPS.AUTO && (
                         <div className="space-y-6 animate-in slide-in-from-right-8 fade-in-0 duration-300">
-                            <h3 className="text-lg font-semibold text-purple-600">Autonomous Phase</h3>
+                            <h3 className="text-lg font-semibold text-white">Autonomous Phase</h3>
 
                             <div className="md:grid md:grid-cols-2 md:gap-4 space-y-4 md:space-y-0">
                                 <div className="flex items-center justify-between border p-3 rounded-lg">
@@ -875,7 +875,7 @@ export default function MatchScoutingForm() {
 
                     {step === STEPS.TELEOP && (
                         <div className="space-y-6 animate-in slide-in-from-right-8 fade-in-0 duration-300">
-                            <h3 className="text-lg font-semibold text-orange-600">Teleop Phase</h3>
+                            <h3 className="text-lg font-semibold text-white">Teleop Phase</h3>
 
                             <div className="bg-muted/20 p-3 rounded-lg border border-orange-200">
                                 <div className="flex items-center justify-between mb-2">
@@ -1008,7 +1008,7 @@ export default function MatchScoutingForm() {
 
                     {step === STEPS.ENDGAME && (
                         <div className="space-y-6 animate-in slide-in-from-right-8 fade-in-0 duration-300">
-                            <h3 className="text-lg font-semibold text-green-600">Endgame & Post-Match</h3>
+                            <h3 className="text-lg font-semibold text-white">Endgame & Post-Match</h3>
 
                             <DefenseAccuracySliders formData={formData} handleInputChange={handleInputChange} />
 

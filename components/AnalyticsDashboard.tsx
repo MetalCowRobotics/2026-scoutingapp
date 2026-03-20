@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { BarChart3, Activity, Shield, Trophy, Filter, ArrowUpDown, AlertCircle, MapPin, Loader2, Gauge, Weight, ArrowUpCircle, Zap, Target, ScrollText, CheckCircle2, ChevronRight, TrendingUp, Radar, GitCompare, Info, Calendar, Users, Globe, Search } from 'lucide-react'
+import { BarChart3, Activity, Shield, Trophy, Filter, ArrowUpDown, AlertCircle, MapPin, Loader2, Gauge, Weight, ArrowUpCircle, Zap, Target, ScrollText, CheckCircle2, ChevronRight, TrendingUp, Radar, GitCompare, Info, Calendar, Users, Globe, Search, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -39,21 +39,32 @@ interface TeamStat {
     nickname?: string
     state_prov?: string
     is_tba_verified?: boolean
-
-    // Pit Data
-    robot_weight?: number
-    auto_abilities?: string
-    start_position?: string
-    can_climb?: boolean
-    can_descend?: boolean
-    collection_speed?: string
-    shoot_speed?: string
-    drive_train_type?: string
-    movement_abilities?: string
-    scoring_speed?: string
-    ranking_points?: string
-    traversal?: boolean
-    super_charged?: boolean
+    // Pit Data (separate namespace)
+    pit_robot_weight?: number
+    pit_fuel_capacity?: number
+    pit_top_speed?: number
+    pit_fuel_per_second?: number
+    pit_primary_role?: string
+    pit_primary_roles?: string[]
+    pit_climb_level?: number
+    pit_climbs_in_auto?: boolean
+    pit_obstacle_handling?: string
+    pit_confidence_drive?: number
+    pit_confidence_shooter?: number
+    pit_confidence_overall?: number
+    pit_notes?: string
+    pit_auto_abilities?: string
+    pit_start_position?: string
+    pit_can_climb?: boolean
+    pit_can_descend?: boolean
+    pit_collection_speed?: string
+    pit_shoot_speed?: string
+    pit_drive_train_type?: string
+    pit_movement_abilities?: string
+    pit_scoring_speed?: string
+    pit_ranking_points?: string
+    pit_traversal?: boolean
+    pit_super_charged?: boolean
 
     // Match Data
     scout_name?: string
@@ -63,6 +74,25 @@ interface TeamStat {
     defense_rating?: number
     ferry?: string
     accuracy?: number
+    // Match Data (separate namespace)
+    match_auto_preloaded?: boolean
+    match_auto_active?: boolean
+    match_auto_fuel_scored?: number
+    match_auto_fuel_pickup_location?: string
+    match_auto_climb?: boolean
+    match_auto_climb_location?: string
+    match_teleop_order?: string
+    match_teleop_zone_control?: string
+    match_teleop_pickup_locations?: string[]
+    match_teleop_fuel_scored?: number
+    match_ranking_points_contributed?: number
+    match_ranking_points_sources?: string[]
+    match_climb_height?: string
+    match_climb_time_seconds?: number
+    match_comments?: string
+    match_is_practice_match?: boolean
+    match_robot_on_field?: boolean
+    match_alliance?: string
 
     // Calculated
     avg_score?: number
@@ -84,6 +114,11 @@ const ROBOT_STAT_OPTIONS = [
     { value: 'ranking_points', label: 'Ranking Points', icon: Trophy },
     { value: 'traversal', label: 'Traversal', icon: ArrowUpCircle },
     { value: 'super_charged', label: 'Super Charged', icon: Zap },
+    { value: 'pit_fuel_capacity', label: 'Fuel Capacity', icon: Gauge },
+    { value: 'pit_top_speed', label: 'Top Speed', icon: ArrowUpCircle },
+    { value: 'pit_fuel_per_second', label: 'Fuel / sec', icon: Zap },
+    { value: 'pit_primary_role', label: 'Primary Roles', icon: Users },
+    { value: 'pit_confidence_overall', label: 'Confidence', icon: Target },
     { value: 'team_number', label: 'Team Number', icon: Shield },
     { value: 'scout_name', label: 'Scout Name', icon: Shield },
     { value: 'accuracy', label: 'Accuracy', icon: Target },
@@ -97,6 +132,13 @@ const FIELD_STAT_OPTIONS = [
     { value: 'defense', label: 'Defense', icon: Shield },
     { value: 'ferry', label: 'Ferry', icon: TrendingUp },
     { value: 'accuracy', label: 'Accuracy', icon: Target },
+        { value: 'match_teleop_zone_control', label: 'Zone Control', icon: MapPin },
+        { value: 'match_teleop_pickup_locations', label: 'Pickup Locations', icon: Target },
+        { value: 'match_auto_preloaded', label: 'Auto Preloaded', icon: CheckCircle2 },
+        { value: 'match_auto_active', label: 'Auto Active', icon: Zap },
+        { value: 'match_climb_height', label: 'Climb Height', icon: ArrowUpCircle },
+        { value: 'match_climb_time_seconds', label: 'Climb Time', icon: Clock },
+        { value: 'match_ranking_points_contributed', label: 'RP Contributed', icon: Trophy },
 ]
 
 const STAT_OPTIONS = [...ROBOT_STAT_OPTIONS, ...FIELD_STAT_OPTIONS]
@@ -181,26 +223,60 @@ export default function AnalyticsDashboard() {
                     current.defense_rating = (match.defense_rating as number) || 0
                     current.ferry = match.ferry as string
                     current.accuracy = (match.accuracy as number) || 0
-                    current.avg_score = ((current.avg_score || 0) + ((match.auto_fuel_scored as number) || 0) + ((match.teleop_fuel_scored as number) || 0))
+                    current.avg_score = ((current.avg_score || 0) + ((match.match_auto_fuel_scored as number) || (match.auto_fuel_scored as number) || 0) + ((match.match_teleop_fuel_scored as number) || (match.teleop_fuel_scored as number) || 0))
                     current.match_count = (current.match_count || 0) + 1
+                    // Map match scouting fields into match_ namespace to avoid mixing with pit data
+                    current.match_auto_preloaded = (match.match_auto_preloaded as boolean) ?? (match.auto_preloaded as boolean)
+                    current.match_auto_active = (match.match_auto_active as boolean) ?? (match.auto_active as boolean)
+                    current.match_auto_fuel_scored = (match.match_auto_fuel_scored as number) ?? (match.auto_fuel_scored as number)
+                    current.match_auto_fuel_pickup_location = (match.match_auto_fuel_pickup_location as string) ?? (match.auto_fuel_pickup_location as string)
+                    current.match_auto_climb = (match.match_auto_climb as boolean) ?? (match.auto_climb as boolean)
+                    current.match_auto_climb_location = (match.match_auto_climb_location as string) ?? (match.auto_climb_location as string)
+                    current.match_start_position = (match.match_start_position as string) ?? (match.start_position as string)
+                    current.match_teleop_order = (match.match_teleop_order as string) ?? (match.teleop_order as string)
+                    current.match_teleop_zone_control = (match.match_teleop_zone_control as string) ?? (match.teleop_zone_control as string)
+                    current.match_teleop_pickup_locations = (match.match_teleop_pickup_locations as any) ?? (match.teleop_pickup_locations as any)
+                    current.match_teleop_fuel_scored = (match.match_teleop_fuel_scored as number) ?? (match.teleop_fuel_scored as number)
+                    current.match_ranking_points_contributed = (match.match_ranking_points_contributed as number) ?? (match.ranking_points_contributed as number)
+                    current.match_ranking_points_sources = (match.match_ranking_points_sources as any) ?? (match.ranking_points_sources as any)
+                    current.match_climb_height = (match.match_climb_height as string) ?? (match.climb_height as string)
+                    current.match_climb_time_seconds = (match.match_climb_time_seconds as number) ?? (match.climb_time_seconds as number)
+                    current.match_comments = (match.match_comments as string) ?? (match.comments as string)
+                    current.match_is_practice_match = (match.match_is_practice_match as boolean) ?? (match.is_practice_match as boolean)
+                    current.match_robot_on_field = (match.match_robot_on_field as boolean) ?? (match.robot_on_field as boolean)
+                    current.match_alliance = (match.match_alliance as string) ?? (match.alliance as string)
                     teamMap.set(match.team_number as number, current)
                 })
 
                 pitData?.forEach((pit: Record<string, unknown>) => {
                     const current = teamMap.get(pit.team_number as number) || { team_number: pit.team_number as number }
-                    current.robot_weight = pit.robot_weight as number
-                    current.auto_abilities = pit.auto_abilities as string
-                    current.start_position = pit.start_position as string
-                    current.can_climb = pit.can_climb as boolean
-                    current.can_descend = pit.can_descend as boolean
-                    current.collection_speed = pit.collection_speed as string
-                    current.shoot_speed = pit.shoot_speed as string
-                    current.drive_train_type = pit.drive_train_type as string
-                    current.movement_abilities = pit.movement_abilities as string
-                    current.scoring_speed = pit.scoring_speed as string
-                    current.ranking_points = pit.ranking_points as string
-                    current.traversal = pit.traversal as boolean
-                    current.super_charged = pit.super_charged as boolean
+                    // Map pit scouting fields into pit_ namespace to avoid mixing with match data
+                    current.pit_robot_weight = pit.robot_weight as number
+                    current.pit_fuel_capacity = pit.fuel_capacity as number
+                    current.pit_top_speed = pit.top_speed as number
+                    current.pit_fuel_per_second = pit.fuel_per_second as number
+                    current.pit_primary_role = pit.primary_role as string
+                    current.pit_primary_roles = pit.primary_role ? (pit.primary_role as string).split(',').map((s: string) => s.trim()) : current.pit_primary_roles
+                    current.pit_climb_level = pit.climb_level as number
+                    current.pit_climbs_in_auto = pit.climbs_in_auto as boolean
+                    current.pit_obstacle_handling = pit.obstacle_handling as string
+                    current.pit_drive_train_type = pit.drive_train_type as string
+                    current.pit_confidence_drive = pit.confidence_drive as number
+                    current.pit_confidence_shooter = pit.confidence_shooter as number
+                    current.pit_confidence_overall = pit.confidence_overall as number
+                    current.pit_notes = pit.comments as string || pit.notes as string
+                    // preserve some legacy mappings into pit_ namespace if present
+                    current.pit_auto_abilities = pit.auto_abilities as string
+                    current.pit_start_position = pit.start_position as string
+                    current.pit_can_climb = pit.can_climb as boolean
+                    current.pit_can_descend = pit.can_descend as boolean
+                    current.pit_collection_speed = pit.collection_speed as string
+                    current.pit_shoot_speed = pit.shoot_speed as string
+                    current.pit_movement_abilities = pit.movement_abilities as string
+                    current.pit_scoring_speed = pit.scoring_speed as string
+                    current.pit_ranking_points = pit.ranking_points as string
+                    current.pit_traversal = pit.traversal as boolean
+                    current.pit_super_charged = pit.super_charged as boolean
                     teamMap.set(pit.team_number as number, current)
                 })
 
@@ -418,6 +494,19 @@ export default function AnalyticsDashboard() {
 
     const getStatValue = (team: TeamStat, stat: string): string => {
         switch (stat) {
+                case 'pit_fuel_capacity': return team.pit_fuel_capacity ? `${team.pit_fuel_capacity}` : 'N/A'
+                case 'pit_top_speed': return team.pit_top_speed ? `${team.pit_top_speed} ft/s` : 'N/A'
+                case 'pit_fuel_per_second': return team.pit_fuel_per_second ? `${team.pit_fuel_per_second}/s` : 'N/A'
+                case 'pit_primary_role': return team.pit_primary_role || team.pit_primary_roles?.join(', ') || 'N/A'
+                case 'pit_confidence_overall': return team.pit_confidence_overall ? `${team.pit_confidence_overall}%` : 'N/A'
+                case 'match_teleop_zone_control': return team.match_teleop_zone_control || 'N/A'
+                case 'match_teleop_pickup_locations': return team.match_teleop_pickup_locations && team.match_teleop_pickup_locations.length ? (team.match_teleop_pickup_locations as string[]).join(', ') : 'N/A'
+                case 'match_auto_preloaded': return team.match_auto_preloaded ? 'Yes' : 'No'
+                case 'match_auto_active': return team.match_auto_active ? 'Yes' : 'No'
+                case 'match_climb_height': return team.match_climb_height || 'N/A'
+                case 'match_climb_time_seconds': return team.match_climb_time_seconds ? `${team.match_climb_time_seconds}s` : 'N/A'
+                case 'match_ranking_points_contributed': return team.match_ranking_points_contributed != null ? `${team.match_ranking_points_contributed}` : 'N/A'
+                case 'match_comments': return team.match_comments || team.pit_notes || 'N/A'
             case 'weight': return team.robot_weight ? `${team.robot_weight} lb` : 'N/A'
             case 'auto': return team.auto_abilities || 'N/A'
             case 'start_pos': return team.start_position || 'N/A'
@@ -445,6 +534,19 @@ export default function AnalyticsDashboard() {
 
     const renderStatCell = (team: TeamStat, stat: string): React.ReactNode => {
         switch (stat) {
+                case 'pit_fuel_capacity': return team.pit_fuel_capacity ? `${team.pit_fuel_capacity}` : '-'
+                case 'pit_top_speed': return team.pit_top_speed ? `${team.pit_top_speed} ft/s` : '-'
+                case 'pit_fuel_per_second': return team.pit_fuel_per_second ? `${team.pit_fuel_per_second}/s` : '-'
+                case 'pit_primary_role': return team.pit_primary_role || (team.pit_primary_roles ? team.pit_primary_roles.join(', ') : '-')
+                case 'pit_confidence_overall': return team.pit_confidence_overall != null ? `${team.pit_confidence_overall}%` : '-'
+                case 'match_teleop_zone_control': return team.match_teleop_zone_control || '-'
+                case 'match_teleop_pickup_locations': return team.match_teleop_pickup_locations && team.match_teleop_pickup_locations.length ? (team.match_teleop_pickup_locations as string[]).join(', ') : '-'
+                case 'match_auto_preloaded': return team.match_auto_preloaded ? <Badge className="bg-primary/20 text-primary">Yes</Badge> : <span className="text-muted-foreground">No</span>
+                case 'match_auto_active': return team.match_auto_active ? <Badge className="bg-primary/20 text-primary">Yes</Badge> : <span className="text-muted-foreground">No</span>
+                case 'match_climb_height': return team.match_climb_height || '-'
+                case 'match_climb_time_seconds': return team.match_climb_time_seconds != null ? `${team.match_climb_time_seconds}s` : '-'
+                case 'match_ranking_points_contributed': return team.match_ranking_points_contributed != null ? `${team.match_ranking_points_contributed}` : '-'
+                case 'match_comments': return team.match_comments || team.pit_notes || '-'
             case 'weight': return team.robot_weight ? `${team.robot_weight} lb` : '-'
             case 'auto': return team.auto_abilities || '-'
             case 'start_pos': return team.start_position || '-'

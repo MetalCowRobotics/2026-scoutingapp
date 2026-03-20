@@ -348,10 +348,10 @@ export default function PitScoutingForm() {
 
                     {step === STEPS.IDENTITY && (
                         <div className="space-y-4 animate-in slide-in-from-right-8 fade-in-0 duration-300">
-                            <h3 className="text-lg font-semibold">Identity</h3>
+                            <h3 className="text-lg font-semibold text-white">Identity</h3>
 
                             <div className="space-y-4 bg-muted/20 p-4 rounded-2xl border border-dashed">
-                                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Competition Setup</h4>
+                                <h4 className="text-xs font-bold text-white uppercase tracking-widest">Competition Setup</h4>
                                 <div className="flex items-center justify-between p-3 rounded-xl bg-primary/5 border border-primary/20">
                                     <div>
                                         <div className="text-[10px] uppercase font-bold text-primary tracking-widest leading-none mb-1">Active Competition</div>
@@ -440,7 +440,7 @@ export default function PitScoutingForm() {
 
                     {step === STEPS.PHYSICAL && (
                         <div className="space-y-4 animate-in slide-in-from-right-8 fade-in-0 duration-300">
-                            <h3 className="text-lg font-semibold text-blue-600">Physical Build</h3>
+                            <h3 className="text-lg font-semibold text-white">Physical Build</h3>
 
                             <div className="flex items-center justify-between bg-muted/30 p-2 rounded-lg">
                                 <Label className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Increment Step</Label>
@@ -512,7 +512,7 @@ export default function PitScoutingForm() {
 
                     {step === STEPS.SCORING && (
                         <div className="space-y-4 animate-in slide-in-from-right-8 fade-in-0 duration-300">
-                            <h3 className="text-lg font-semibold text-orange-600">Scoring Potential</h3>
+                            <h3 className="text-lg font-semibold text-white">Scoring Potential</h3>
 
                             <div className="flex items-center justify-between bg-muted/30 p-2 rounded-lg text-orange-600">
                                 <Label className="text-xs uppercase font-bold opacity-70 tracking-wider">Increment Step</Label>
@@ -584,7 +584,7 @@ export default function PitScoutingForm() {
 
                     {step === STEPS.ADVANCED && (
                         <div className="space-y-4 animate-in slide-in-from-right-8 fade-in-0 duration-300">
-                            <h3 className="text-lg font-semibold text-purple-600">Advanced Capabilities</h3>
+                            <h3 className="text-lg font-semibold text-white">Advanced Capabilities</h3>
 
                             <div className="space-y-4">
                                 <div className="space-y-2">
@@ -627,7 +627,7 @@ export default function PitScoutingForm() {
                                 </div>
 
                                 <div className="space-y-4 border-t pt-4">
-                                    <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Confidence Ratings</h4>
+                                    <h4 className="text-sm font-bold text-white uppercase tracking-wider">Confidence Ratings</h4>
 
                                     <div className="space-y-2">
                                         <Label>Drive Confidence</Label>

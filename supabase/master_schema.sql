@@ -52,7 +52,108 @@ CREATE TABLE IF NOT EXISTS public.pit_scouting (
     fuel_capacity INTEGER,
     fuel_per_second NUMERIC, -- Theoretical cycle speed
     
-    -- Strategic Blueprint
+    -- Strategic Blueprint+*-+
+
+
+
+
+
+
+    +
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
     climb_level INTEGER CHECK (climb_level IN (1, 2, 3)),
     climbs_in_auto BOOLEAN DEFAULT FALSE,
     obstacle_handling TEXT CHECK (obstacle_handling IN ('Trench', 'Bump', 'Both', 'None')),
@@ -105,6 +206,23 @@ CREATE TABLE IF NOT EXISTS public.match_scouting (
     robot_status TEXT DEFAULT 'Functional' CHECK (robot_status IN ('Functional', 'Partially Functional', 'Broken')),
     comments TEXT
 );
+
+-- Ensure any newer match scouting columns exist (idempotent additions)
+ALTER TABLE public.match_scouting
+    ADD COLUMN IF NOT EXISTS teleop_phase TEXT,
+    ADD COLUMN IF NOT EXISTS teleop_phase_1_fuel_scored INTEGER DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS teleop_phase_2_fuel_scored INTEGER DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS teleop_phase_3_fuel_scored INTEGER DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS teleop_phase_4_fuel_scored INTEGER DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS teleop_phase_1_fuel_range TEXT,
+    ADD COLUMN IF NOT EXISTS teleop_phase_2_fuel_range TEXT,
+    ADD COLUMN IF NOT EXISTS teleop_phase_3_fuel_range TEXT,
+    ADD COLUMN IF NOT EXISTS teleop_phase_4_fuel_range TEXT,
+    ADD COLUMN IF NOT EXISTS climb_height TEXT,
+    ADD COLUMN IF NOT EXISTS climb_time_seconds INTEGER,
+    ADD COLUMN IF NOT EXISTS ranking_points_sources TEXT[],
+    ADD COLUMN IF NOT EXISTS teleop_order TEXT;
+
 
 -- 5. 📊 STRATEGIC ANALYTICS (Hybrid View)
 -- Merges Pit specs with Match performance for the Analytics Dashboard
