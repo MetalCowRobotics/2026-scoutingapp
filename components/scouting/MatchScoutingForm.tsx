@@ -127,10 +127,10 @@ const STEPS = {
 
 function DefenseAccuracySliders({ formData, handleInputChange }: { formData: any, handleInputChange: (field: string, value: any) => void }) {
     return (
-        <div className="space-y-3 border border-secondary/10 bg-secondary/5 p-4 rounded-lg text-black">
+        <div className="space-y-3 border border-secondary/10 bg-secondary/5 p-4 rounded-lg text-white">
             <h4 className="text-sm font-bold text-white">Defense and Accuracy</h4>
             <div className="space-y-2">
-                <Label className="text-black">Defense Rating</Label>
+                <Label className="text-white">Defense Rating</Label>
                 <input
                     type="range"
                     min="0"
@@ -140,13 +140,13 @@ function DefenseAccuracySliders({ formData, handleInputChange }: { formData: any
                     className="w-full"
                 />
                 <div className="text-xs text-muted-foreground flex justify-between">
-                    <span>Poor</span>
-                    <span className="font-bold">{formData.defense_rating}%</span>
-                    <span>Excellent</span>
+                    <span className="text-white">Poor</span>
+                    <span className="font-bold text-white">{formData.defense_rating}%</span>
+                    <span className="text-white">Excellent</span>
                 </div>
             </div>
             <div className="space-y-2">
-                <Label className="text-black">Accuracy Rating</Label>
+                <Label className="text-white">Accuracy Rating</Label>
                 <input
                     type="range"
                     min="0"
@@ -622,8 +622,8 @@ export default function MatchScoutingForm() {
         <div className="max-w-md md:max-w-2xl mx-auto p-4">
             <Card className="w-full">
                 <CardHeader>
-                    <CardTitle>Match Scouting</CardTitle>
-                    <CardDescription>Step {step + 1} of 4</CardDescription>
+                    <CardTitle className="text-white">Match Scouting</CardTitle>
+                    <CardDescription className="text-gray-300">Step {step + 1} of 4</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
 
@@ -646,7 +646,7 @@ export default function MatchScoutingForm() {
 
                             <div className="md:grid md:grid-cols-2 md:gap-6 space-y-4 md:space-y-0 pt-2">
                                 <div className="space-y-2">
-                                    <Label htmlFor="match_number">Match #</Label>
+                                    <Label htmlFor="match_number" className="text-white">Match #</Label>
                                     <Input
                                         id="match_number"
                                         type="number"
@@ -659,7 +659,7 @@ export default function MatchScoutingForm() {
                                 </div>
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-center gap-2">
-                                        <Label htmlFor="team_number">Team # or Name</Label>
+                                        <Label htmlFor="team_number" className="text-white">Team # or Name</Label>
                                         {formData.team_number && (
                                             <TeamNickname
                                                 teamNumber={formData.team_number}
@@ -729,7 +729,7 @@ export default function MatchScoutingForm() {
 
                             <div className="md:grid md:grid-cols-2 md:gap-4 space-y-4 md:space-y-0">
                                 <div className="space-y-2">
-                                    <Label>Alliance</Label>
+                                    <Label className="text-white">Alliance</Label>
                                     <div className="flex gap-2">
                                         <Button
                                             type="button"
@@ -747,7 +747,7 @@ export default function MatchScoutingForm() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="scout_name">Scout Name</Label>
+                                    <Label htmlFor="scout_name" className="text-white">Scout Name</Label>
                                     <Input
                                         id="scout_name"
                                         value={formData.scout_name}
@@ -765,7 +765,7 @@ export default function MatchScoutingForm() {
                                     onChange={(e) => handleInputChange('is_practice_match', e.target.checked)}
                                     className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                                 />
-                                <Label htmlFor="practice" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                <Label htmlFor="practice" className="text-sm font-medium leading-none text-white peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                                     Practice Match?
                                 </Label>
                             </div>
@@ -778,12 +778,10 @@ export default function MatchScoutingForm() {
                                     onChange={(e) => handleInputChange('robot_on_field', e.target.checked)}
                                     className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                                 />
-                                <Label htmlFor="robot_on_field" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                <Label htmlFor="robot_on_field" className="text-sm font-medium leading-none text-white peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                                     Robot on Field?
                                 </Label>
                             </div>
-
-                            <DefenseAccuracySliders formData={formData} handleInputChange={handleInputChange} />
 
                         </div>
                     )}
@@ -794,7 +792,7 @@ export default function MatchScoutingForm() {
 
                             <div className="md:grid md:grid-cols-2 md:gap-4 space-y-4 md:space-y-0">
                                 <div className="flex items-center justify-between border p-3 rounded-lg">
-                                    <Label>Preloaded?</Label>
+                                    <Label className="text-white">Preloaded?</Label>
                                     <input
                                         type="checkbox"
                                         checked={formData.auto_preloaded}
@@ -804,7 +802,7 @@ export default function MatchScoutingForm() {
                                 </div>
 
                                 <div className="flex items-center justify-between border p-3 rounded-lg">
-                                    <Label>Robot Active?</Label>
+                                    <Label className="text-white">Robot Active?</Label>
                                     <input
                                         type="checkbox"
                                         checked={formData.auto_active}
@@ -832,7 +830,7 @@ export default function MatchScoutingForm() {
 
                             <div className="md:grid md:grid-cols-2 md:gap-4 space-y-4 md:space-y-0">
                                 <div className="space-y-2">
-                                    <Label>Fuel Scored</Label>
+                                    <Label className="text-white">Fuel Scored</Label>
                                     <div className="flex items-center gap-2">
                                         <Button variant="outline" size="icon" className="shrink-0" onClick={() => handleInputChange('auto_fuel_scored', Math.max(0, formData.auto_fuel_scored - increment))}>-</Button>
                                         <Input
@@ -848,7 +846,7 @@ export default function MatchScoutingForm() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label>Teleop Order</Label>
+                                    <Label className="text-white">Teleop Order</Label>
                                     <Select onValueChange={(val) => handleInputChange('teleop_order', val || 'defense_first')} value={formData.teleop_order || 'defense_first'}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select Teleop Order" />
@@ -861,7 +859,7 @@ export default function MatchScoutingForm() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label>Start Position - Click on the field to select</Label>
+                                    <Label className="text-white">Start Position - Click on the field to select</Label>
                                     <div className="relative w-full">
                                         <div className="relative rounded-xl overflow-hidden border-2">
                                             <img
@@ -900,7 +898,7 @@ export default function MatchScoutingForm() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Auto Climb?</Label>
+                                <Label className="text-white">Auto Climb?</Label>
                                 <div className="flex gap-2">
                                     <Button
                                         variant={formData.auto_climb ? 'default' : 'outline'}
@@ -911,8 +909,6 @@ export default function MatchScoutingForm() {
                                     </Button>
                                 </div>
                             </div>
-
-                            <DefenseAccuracySliders formData={formData} handleInputChange={handleInputChange} />
                         </div>
                     )}
 
@@ -1056,7 +1052,7 @@ export default function MatchScoutingForm() {
                             <DefenseAccuracySliders formData={formData} handleInputChange={handleInputChange} />
 
                             <div className="space-y-2">
-                                <Label>Climb Height</Label>
+                                <Label className="text-white">Climb Height</Label>
                                 <Select onValueChange={(val) => handleInputChange('climb_height', val || 'None')} value={formData.climb_height || 'None'}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select height" />
@@ -1071,7 +1067,7 @@ export default function MatchScoutingForm() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Climb Time (sec)</Label>
+                                <Label className="text-white">Climb Time (sec)</Label>
                                 <div className="flex items-center gap-2">
                                     <Button variant="outline" size="icon" className="shrink-0" onClick={() => handleInputChange('climb_time_seconds', Math.max(0, formData.climb_time_seconds - 1))}>-</Button>
                                     <Input
@@ -1087,7 +1083,7 @@ export default function MatchScoutingForm() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Ranking Points Contributed</Label>
+                                <Label className="text-white">Ranking Points Contributed</Label>
                                 <div className="flex items-center gap-2">
                                     <Button variant="outline" size="icon" className="shrink-0" onClick={() => handleInputChange('ranking_points_contributed', Math.max(0, formData.ranking_points_contributed - 1))}>-</Button>
                                     <Input
@@ -1103,7 +1099,7 @@ export default function MatchScoutingForm() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Ranking Points Earned</Label>
+                                <Label className="text-white">Ranking Points Earned</Label>
                                 <div className="flex flex-wrap gap-2">
                                     {['Win RP', 'Tie RP', 'Auto RP', 'Endgame RP', 'Supercharged RP'].map((rp) => (
                                         <Button
@@ -1126,7 +1122,7 @@ export default function MatchScoutingForm() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Robot Status</Label>
+                                <Label className="text-white">Robot Status</Label>
                                 <Select onValueChange={(val) => handleInputChange('robot_status', val || '')} value={formData.robot_status || ''}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Status" />
@@ -1141,7 +1137,7 @@ export default function MatchScoutingForm() {
 
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center">
-                                    <Label>Comments</Label>
+                                    <Label className="text-white">Comments</Label>
                                     <span className={cn(
                                         "text-[10px] font-bold uppercase tracking-wider",
                                         formData.comments.length >= 180 ? "text-destructive" : "text-muted-foreground"
