@@ -702,15 +702,40 @@ export default function MatchScoutingForm() {
                             <div className="md:grid md:grid-cols-2 md:gap-6 space-y-4 md:space-y-0 pt-2">
                                 <div className="space-y-2">
                                     <Label htmlFor="match_number">Match #</Label>
-                                    <Input
-                                        id="match_number"
-                                        type="number"
-                                        min="1"
-                                        max="300"
-                                        value={formData.match_number}
-                                        onChange={(e) => handleInputChange('match_number', e.target.value)}
-                                        placeholder="1"
-                                    />
+                                    <div className="flex gap-2 items-end">
+                                        <Input
+                                            id="match_number"
+                                            type="number"
+                                            min="1"
+                                            max="300"
+                                            value={formData.match_number}
+                                            onChange={(e) => {
+                                                const value = e.target.value
+                                                handleInputChange('match_number', value)
+                                                if (value) {
+                                                    handleInputChange('is_practice_match', false)
+                                                }
+                                            }}
+                                            placeholder="1"
+                                            disabled={formData.is_practice_match}
+                                            className={formData.is_practice_match ? 'opacity-50 cursor-not-allowed' : ''}
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant={formData.is_practice_match ? 'default' : 'outline'}
+                                            className={formData.is_practice_match ? 'bg-green-600 text-white hover:bg-green-700' : ''}
+                                            onClick={() => {
+                                                const nextMode = !formData.is_practice_match
+                                                handleInputChange('is_practice_match', nextMode)
+                                                if (nextMode) {
+                                                    handleInputChange('match_number', '')
+                                                }
+                                            }}
+                                        >
+                                            {formData.is_practice_match ? 'Practice (on)' : 'Practice'}
+                                        </Button>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">Either enter a match number or set Practice Match.</p>
                                 </div>
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-center gap-2">
@@ -786,6 +811,18 @@ export default function MatchScoutingForm() {
                                             {tbaMatchLoading ? 'Assigning...' : 'Randomize team'}
                                         </Button>
                                     </div>
+                                    <div className="mt-3">
+                                        <Button
+                                            type="button"
+                                            variant="default"
+                                            className="w-full"
+                                            onClick={assignRandomMatchTeam}
+                                            disabled={tbaMatchLoading}
+                                        >
+                                            {tbaMatchLoading ? 'Assigning...' : 'Randomize team from current match'}
+                                        </Button>
+                                        <p className="text-xs text-muted-foreground mt-1">Click to auto-fill the team from either red or blue alliance in this match.</p>
+                                    </div>
                                     {validTeams.length > 0 && formData.team_number && /^\d+$/.test(formData.team_number) && !validTeams.includes(parseInt(formData.team_number)) && (
                                         <p className="text-[10px] text-destructive mt-1 font-medium">This team isn't registered for this event.</p>
                                     )}
@@ -820,19 +857,6 @@ export default function MatchScoutingForm() {
                                         placeholder="Enter your name"
                                     />
                                 </div>
-                            </div>
-
-                            <div className="flex items-center space-x-2 pt-2">
-                                <input
-                                    type="checkbox"
-                                    id="practice"
-                                    checked={formData.is_practice_match}
-                                    onChange={(e) => handleInputChange('is_practice_match', e.target.checked)}
-                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                                />
-                                <Label htmlFor="practice" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                    Practice Match?
-                                </Label>
                             </div>
 
                             <div className="flex items-center space-x-2">
