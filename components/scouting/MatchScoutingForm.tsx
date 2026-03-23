@@ -172,6 +172,7 @@ export default function MatchScoutingForm() {
 
     const [step, setStep] = useState(STEPS.PREMATCH)
     const [loading, setLoading] = useState(false)
+    const [tbaMatchLoading, setTbaMatchLoading] = useState(false)
     const [increment, setIncrement] = useState(1)
     const [validTeams, setValidTeams] = useState<number[]>([])
     const [teleopPhaseIndex, setTeleopPhaseIndex] = useState(0)
@@ -459,8 +460,8 @@ export default function MatchScoutingForm() {
     const validateStep = () => {
         if (step === STEPS.PREMATCH) {
             const isValidTeam = validTeams.includes(parseInt(formData.team_number));
-            if (!formData.match_number || !formData.team_number || !formData.alliance || !formData.scout_name) {
-                showAlert('Missing Information', 'Please fill out all fields (Match #, Team #, Alliance, Scout Name) before moving forward.');
+            if ((!formData.match_number && !formData.is_practice_match) || !formData.team_number || !formData.alliance || !formData.scout_name) {
+                showAlert('Missing Information', 'Please fill out all fields (Match # or Practice, Team #, Alliance, Scout Name) before moving forward.');
                 return false;
             }
             if (validTeams.length > 0 && !isValidTeam) {
@@ -540,6 +541,60 @@ export default function MatchScoutingForm() {
         return true;
     };
 
+    const assignRandomMatchTeam = async () => {
+        if (!formData.event_key) {
+            showAlert('No Event', 'Event key is required to lookup matches.')
+            return
+        }
+        if (!formData.match_number) {
+            showAlert('No Match', 'Please enter a match number first.')
+            return
+        }
+
+        const matchNumber = parseInt(formData.match_number)
+        if (isNaN(matchNumber)) {
+            showAlert('Invalid Match', 'Match number must be a valid number.')
+            return
+        }
+
+        setTbaMatchLoading(true)
+        try {
+            const matches = await getTBAData(`/event/${formData.event_key}/matches`)
+            if (!Array.isArray(matches)) {
+                throw new Error('Invalid match data from TBA')
+            }
+
+            const targetMatch = matches.find((m: any) => m.match_number === matchNumber)
+            if (!targetMatch) {
+                showAlert('Match Not Found', `Unable to find match ${matchNumber} for event ${formData.event_key}.`)
+                return
+            }
+
+            const redTeams: string[] = targetMatch.alliances?.red?.team_keys || []
+            const blueTeams: string[] = targetMatch.alliances?.blue?.team_keys || []
+            const matchTeams = [...redTeams, ...blueTeams]
+
+            if (matchTeams.length === 0) {
+                showAlert('No Teams', `No red or blue alliance teams found for match ${matchNumber}.`)
+                return
+            }
+
+            const randomIndex = Math.floor(Math.random() * matchTeams.length)
+            const selectedTeamKey = matchTeams[randomIndex]
+            const selectedTeamNumber = selectedTeamKey.startsWith('frc') ? selectedTeamKey.replace('frc', '') : selectedTeamKey
+            const selectedAlliance = redTeams.includes(selectedTeamKey) ? 'red' : 'blue'
+
+            handleInputChange('team_number', selectedTeamNumber)
+            handleInputChange('is_practice_match', false)
+            showAlert('Team Assigned', `Assigned random ${selectedAlliance} alliance team ${selectedTeamNumber} for match ${matchNumber}.`, 'success')
+        } catch (error) {
+            console.error(error)
+            showAlert('TBA Error', 'Could not load match data from TBA.')
+        } finally {
+            setTbaMatchLoading(false)
+        }
+    }
+
     const nextStep = () => {
         if (step === STEPS.TELEOP) {
             if (!validateStep()) return
@@ -603,16 +658,40 @@ export default function MatchScoutingForm() {
 
                             <div className="md:grid md:grid-cols-2 md:gap-6 space-y-4 md:space-y-0 pt-2">
                                 <div className="space-y-2">
-                                    <Label htmlFor="match_number">Match #</Label>
-                                    <Input
-                                        id="match_number"
-                                        type="number"
-                                        min="1"
-                                        max="300"
-                                        value={formData.match_number}
-                                        onChange={(e) => handleInputChange('match_number', e.target.value)}
-                                        placeholder="1"
-                                    />
+                                    <Label>Match # or Practice Match?</Label>
+                                    <div className="flex gap-2 items-end">
+                                        <div className="flex-1">
+                                            <Input
+                                                id="match_number"
+                                                type="number"
+                                                min="1"
+                                                max="300"
+                                                value={formData.match_number}
+                                                onChange={(e) => {
+                                                    handleInputChange('match_number', e.target.value)
+                                                    if (e.target.value) {
+                                                        handleInputChange('is_practice_match', false)
+                                                    }
+                                                }}
+                                                placeholder="1"
+                                                disabled={formData.is_practice_match}
+                                                className={formData.is_practice_match ? 'opacity-50 cursor-not-allowed' : ''}
+                                            />
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant={formData.is_practice_match ? 'default' : 'outline'}
+                                            className={`whitespace-nowrap ${formData.is_practice_match ? 'bg-green-600 text-green-50 hover:bg-green-700' : ''}`}
+                                            onClick={() => {
+                                                handleInputChange('is_practice_match', !formData.is_practice_match)
+                                                if (!formData.is_practice_match) {
+                                                    handleInputChange('match_number', '')
+                                                }
+                                            }}
+                                        >
+                                            Practice?
+                                        </Button>
+                                    </div>
                                 </div>
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-center gap-2">
@@ -643,7 +722,7 @@ export default function MatchScoutingForm() {
                                                     handleInputChange('team_number', value)
                                                 }
                                             }}
-                                            placeholder="254 or 'Cheesy Poofs'"
+                                            placeholder="4213 or Metalcow'"
                                             className={cn(
                                                 validTeams.length > 0 && formData.team_number && /^\d+$/.test(formData.team_number) && !validTeams.includes(parseInt(formData.team_number)) ? "border-destructive focus-visible:ring-destructive" : ""
                                             )}
@@ -677,6 +756,16 @@ export default function MatchScoutingForm() {
                                                 ))}
                                             </div>
                                         )}
+
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="whitespace-nowrap mt-2"
+                                            onClick={assignRandomMatchTeam}
+                                            disabled={tbaMatchLoading}
+                                        >
+                                            {tbaMatchLoading ? 'Assigning...' : 'Randomize team'}
+                                        </Button>
                                     </div>
                                     {validTeams.length > 0 && formData.team_number && /^\d+$/.test(formData.team_number) && !validTeams.includes(parseInt(formData.team_number)) && (
                                         <p className="text-[10px] text-destructive mt-1 font-medium">This team isn't registered for this event.</p>
@@ -712,19 +801,6 @@ export default function MatchScoutingForm() {
                                         placeholder="Enter your name"
                                     />
                                 </div>
-                            </div>
-
-                            <div className="flex items-center space-x-2 pt-2">
-                                <input
-                                    type="checkbox"
-                                    id="practice"
-                                    checked={formData.is_practice_match}
-                                    onChange={(e) => handleInputChange('is_practice_match', e.target.checked)}
-                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                                />
-                                <Label htmlFor="practice" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                    Practice Match?
-                                </Label>
                             </div>
 
                             <div className="flex items-center space-x-2">

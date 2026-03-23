@@ -314,7 +314,7 @@ export default function PitScoutingForm() {
                     fuel_per_second: 10,
                     primary_role: 'Offense',
                     primary_roles: ['Offense'],
-                    climb_level: '1',
+                    climb_level: '0',
                     climbs_in_auto: false,
                     obstacle_handling: 'None',
                     drive_train: 'Swerve',
@@ -594,6 +594,7 @@ export default function PitScoutingForm() {
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
+                                            <SelectItem value="0">None</SelectItem>
                                             <SelectItem value="1">Level 1 (Lowest Hanging)</SelectItem>
                                             <SelectItem value="2">Level 2 (Mid Bar)</SelectItem>
                                             <SelectItem value="3">Level 3 (Top Bar)</SelectItem>
